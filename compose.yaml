@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: rss
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile.dev
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/rss
+      RUST_LOG: info
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3001
+      FRONTEND_URL: http://localhost:5173
+      API_URL: http://localhost:3000
+      JWT_SECRET: change_me_in_dev
+      APP_NAME: rss
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      MAIL_FROM: noreply@rss.local
+      SMTP_FROM_NAME: rss
+    depends_on:
+      - postgres
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - ../kaleido:/kaleido:ro
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile.dev
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/rss
+      RUST_LOG: info
+      APP_NAME: rss
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      MAIL_FROM: noreply@rss.local
+      SMTP_FROM_NAME: rss
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+      - ../kaleido:/kaleido:ro
+
+  ui-next:
+    build:
+      context: ./ui-next
+      dockerfile: Dockerfile.dev
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_PUBLIC_CDN_URL: http://localhost:3000/uploads
+    depends_on:
+      - api
+    ports:
+      - '3001:3000'
+    volumes:
+      - ./ui-next:/app
+
+volumes:
+  postgres_data:

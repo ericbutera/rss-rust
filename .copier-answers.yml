@@ -1,0 +1,6 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_src_path: kaleido/scaffold
+frontend: both
+project_name: rss
+project_slug: rss
+
