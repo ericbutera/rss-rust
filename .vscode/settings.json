@@ -1,0 +1,26 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "awk": true,
+    "cargo build": true,
+    "cargo check": true,
+    "cargo fmt": true,
+    "cargo insta": true,
+    "cargo test": true,
+    "curl": true,
+    "docker logs": true,
+    "egrep": true,
+    "go": true,
+    "jq": true,
+    "npm run build": true,
+    "task": true,
+    "./node_modules/.bin/tsc": true,
+    "cargo run": true,
+    "cargo add": true,
+    "docker ps": true,
+    "docker compose": true,
+    "pushd": true,
+    "cargo update": true,
+    "docker build": true,
+    "pnpm": true
+  }
+}

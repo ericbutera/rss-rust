@@ -30,3 +30,7 @@ utoipa-swagger-ui = { version = "8", features = ["axum"] }
 auth = { git = "https://github.com/ericbutera/kaleido", branch = "main" }
 background_jobs = { git = "https://github.com/ericbutera/kaleido", branch = "main", features = ["durable"] }
 glass = { git = "https://github.com/ericbutera/kaleido", branch = "main" }
+sha2 = "0.10"
+hex = "0.4"
+chrono = { workspace = true }
+validator = { version = "0.20", features = ["derive"] }

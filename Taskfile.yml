@@ -63,18 +63,21 @@ tasks:
 
   openapi:react-query:
     desc: Generate OpenAPI TypeScript definitions from running API
+    vars:
+      OPENAPI_TMP: .openapi-tmp.json
     cmds:
       - echo "Waiting for API to be ready..."
       - |
         OPENAPI_URL="${OPENAPI_URL:-http://localhost:3000/openapi.json}"
+        OPENAPI_TMP="{{.OPENAPI_TMP}}"
         for i in {1..30}; do
-          status=$(curl -s -o /tmp/openapi.json -w "%{http_code}" "$OPENAPI_URL" || echo "000")
+          status=$(curl -s -o "$OPENAPI_TMP" -w "%{http_code}" "$OPENAPI_URL" || echo "000")
           if [ "$status" = "200" ]; then
-            if node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/openapi.json','utf8')); if(!j.openapi) process.exit(2);" >/dev/null 2>&1; then
+            if node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('$OPENAPI_TMP','utf8')); if(!j.openapi) process.exit(2);" >/dev/null 2>&1; then
               break
             fi
           fi
           sleep 2
         done
-      - npx openapi-typescript /tmp/openapi.json --output ui/src/lib/openapi/react-query/api.d.ts
-      - rm -f /tmp/openapi.json
+      - npx openapi-typescript {{.OPENAPI_TMP}} --output ui-next/src/lib/openapi/react-query/api.d.ts
+      - rm -f {{.OPENAPI_TMP}}

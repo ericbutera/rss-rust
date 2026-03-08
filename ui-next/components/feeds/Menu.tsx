@@ -1,0 +1,138 @@
+"use client";
+
+import { faLinkSlash, faPlus, faRss } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
+import {
+  useCreateFeed,
+  useFeeds,
+  type FeedResponse,
+} from "../../src/lib/queries";
+
+interface MenuProps {
+  selectedFeedId: number | null;
+  onSelectFeed: (id: number | null) => void;
+}
+
+export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
+  const { data: feeds, isLoading } = useFeeds();
+  const { mutateAsync: createFeed, isPending } = useCreateFeed();
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newUrl, setNewUrl] = useState("");
+  const [newName, setNewName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleAddFeed(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await createFeed({ url: newUrl, name: newName || undefined });
+      setNewUrl("");
+      setNewName("");
+      setShowAddForm(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to add feed";
+      setError(msg);
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full p-2">
+      <div className="flex items-center justify-between px-2 py-3">
+        <span className="font-bold text-sm uppercase tracking-wide opacity-60">
+          Feeds
+        </span>
+        <button
+          className="btn btn-ghost btn-xs"
+          onClick={() => setShowAddForm((v) => !v)}
+          title="Subscribe to a feed"
+        >
+          <FontAwesomeIcon icon={faPlus} />
+        </button>
+      </div>
+
+      {/* Add feed form */}
+      {showAddForm && (
+        <form
+          onSubmit={handleAddFeed}
+          className="px-2 pb-3 flex flex-col gap-1"
+        >
+          <input
+            className="input input-bordered input-sm w-full"
+            type="url"
+            placeholder="https://example.com/feed.xml"
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            required
+          />
+          <input
+            className="input input-bordered input-sm w-full"
+            type="text"
+            placeholder="Name (optional)"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          {error && <p className="text-error text-xs">{error}</p>}
+          <div className="flex gap-1">
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm flex-1"
+              disabled={isPending}
+            >
+              {isPending ? "Adding…" : "Add"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setShowAddForm(false);
+                setError(null);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Feed list */}
+      <ul className="menu menu-sm w-full gap-0.5">
+        {isLoading && (
+          <li>
+            <span className="loading loading-spinner loading-xs" />
+          </li>
+        )}
+        {!isLoading && feeds.length === 0 && (
+          <li>
+            <span className="text-xs opacity-50 flex items-center gap-2">
+              <FontAwesomeIcon icon={faLinkSlash} />
+              No feeds yet
+            </span>
+          </li>
+        )}
+        {feeds.map((feed: FeedResponse) => (
+          <li key={feed.id}>
+            <a
+              className={selectedFeedId === feed.id ? "active" : ""}
+              onClick={() =>
+                onSelectFeed(selectedFeedId === feed.id ? null : feed.id)
+              }
+            >
+              <FontAwesomeIcon icon={faRss} className="shrink-0 opacity-60" />
+              <span className="truncate flex-1">
+                {feed.name ?? new URL(feed.url).hostname}
+              </span>
+              {!feed.last_read_at && (
+                <span
+                  className="w-2 h-2 rounded-full bg-primary shrink-0"
+                  title="Unread"
+                />
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

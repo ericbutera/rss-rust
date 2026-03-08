@@ -20,6 +20,11 @@ use utoipa::OpenApi;
         glass_openapi::paths::public_flags,
         glass_openapi::paths::list_flags,
         glass_openapi::paths::update_flag,
+        crate::controllers::feeds::list_feeds,
+        crate::controllers::feeds::create_feed,
+        crate::controllers::feeds::list_articles,
+        crate::controllers::feeds::mark_feed_read,
+        crate::controllers::feeds::mark_article_read,
     ),
     components(
         schemas(
@@ -37,11 +42,17 @@ use utoipa::OpenApi;
             glass_openapi::schemas::PaginatedResponse<glass_openapi::schemas::FeatureFlagResponse>,
             glass_openapi::schemas::PaginatedResponse<glass_openapi::schemas::PublicFlagResponse>,
             glass::data::pagination::PaginationParams,
+            crate::controllers::feeds::CreateFeedRequest,
+            crate::controllers::feeds::FeedResponse,
+            crate::controllers::feeds::ArticleResponse,
+            crate::controllers::feeds::ArticlesPage,
+            crate::controllers::feeds::MessageResponse,
         )
     ),
     tags(
         (name = "admin", description = "Admin-only endpoints"),
         (name = "auth", description = "Authentication and user management"),
+        (name = "feeds", description = "RSS feed management"),
         (name = "flags", description = "Feature flags"),
         (name = "oauth", description = "OAuth authentication")
     ),

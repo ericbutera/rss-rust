@@ -1,3 +1,5 @@
+pub mod feeds;
+
 use crate::storage::AppStorage;
 use axum::{routing::get, Json, Router};
 use glass::feature_flags;
@@ -10,6 +12,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .nest("/api/oauth", auth::oauth_routes())
         .nest("/api/admin/feature-flags", feature_flags::admin_routes())
         .nest("/api/feature-flags", feature_flags::public_routes())
+        .nest("/api", feeds::routes())
         .route("/api/health", get(health))
         .route("/", get(root))
 }

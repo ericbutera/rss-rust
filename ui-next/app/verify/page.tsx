@@ -1,12 +1,15 @@
 "use client";
 
 import { auth } from "@ericbutera/kaleido";
+import { Suspense } from "react";
 import AuthRouter from "../../components/AuthRouter";
 
 export default function VerifyPage() {
   return (
-    <AuthRouter>
-      <auth.Verify />
-    </AuthRouter>
+    <Suspense>
+      <AuthRouter>
+        <auth.Verify />
+      </AuthRouter>
+    </Suspense>
   );
 }

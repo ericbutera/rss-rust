@@ -12,7 +12,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     init_json_tracing();
 
     let cfg = Config::init_from_env();
-    let db = sea_orm::Database::connect(&cfg.database_url).await?;
+    let db = std::sync::Arc::new(sea_orm::Database::connect(&cfg.database_url).await?);
 
     let worker_config = WorkerConfig::from_env(WorkerConfigDefaults {
         metrics_port: 9091,
@@ -20,12 +20,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         poll_interval_secs: 10,
     });
 
-    let worker = TaskWorker::new(db)
+    let worker = TaskWorker::new((*db).clone())
         .with_batch_size(worker_config.batch_size)
         .with_poll_interval(Duration::from_secs(worker_config.poll_interval_secs));
 
     let worker = register_auth_email_processors(worker, cfg)?;
-    let worker = register_default_processors(worker).await?;
+    let worker = register_default_processors(worker, db).await?;
 
     let metrics = Arc::new(WorkerMetrics::new("worker"));
     let task_types = worker.registered_task_types();

@@ -1,5 +1,7 @@
+pub mod app_error;
 pub mod config;
 pub mod controllers;
+pub mod entities;
 pub mod feature_flags_keys;
 pub mod openapi;
 pub mod storage;

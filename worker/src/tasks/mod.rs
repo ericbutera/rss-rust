@@ -5,7 +5,8 @@ use auth::worker::{
     register_all_auth_processors as register_shared_auth_processors, AuthWorkerConfig,
     AuthWorkerSmtpConfig,
 };
-use background_jobs::worker::{TaskWorker, WorkerError};
+use background_jobs::worker::{spawn_scheduler, TaskProcessor, TaskWorker, WorkerError};
+use background_jobs::{DurableStorage, TaskQueue};
 use std::sync::Arc;
 
 pub use processors::*;
@@ -31,6 +32,25 @@ pub fn register_auth_email_processors(
     Ok(worker.register_processor(email_notification))
 }
 
-pub async fn register_default_processors(worker: TaskWorker) -> Result<TaskWorker, WorkerError> {
-    Ok(worker)
+pub async fn register_default_processors(
+    worker: TaskWorker,
+    db: Arc<sea_orm::DatabaseConnection>,
+) -> Result<TaskWorker, WorkerError> {
+    let fetcher = Arc::new(FeedFetcher::new(db.clone()));
+
+    // Spawn the cron scheduler so feed_fetcher tasks are enqueued on schedule
+    let db_for_scheduler = (*db).clone();
+    spawn_scheduler(fetcher.schedule(), move || {
+        let storage = DurableStorage::new(db_for_scheduler.clone());
+        let queue = TaskQueue::new(storage);
+        async move {
+            queue
+                .enqueue("feed_fetcher".to_string(), serde_json::json!({}))
+                .await
+                .map(|_| ())
+                .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+        }
+    });
+
+    Ok(worker.register_processor(fetcher))
 }

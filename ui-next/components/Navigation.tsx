@@ -14,6 +14,11 @@ export default function Navigation() {
         <Link href="/" className="btn btn-ghost normal-case text-lg">
           rss
         </Link>
+        {user && (
+          <Link href="/feeds" className="ml-4 hidden sm:inline">
+            Feeds
+          </Link>
+        )}
         <Link href="/account" className="ml-4 hidden sm:inline">
           Account
         </Link>

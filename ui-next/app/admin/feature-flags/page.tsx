@@ -1,7 +1,15 @@
 "use client";
 
 import { admin } from "@ericbutera/kaleido";
+import { Suspense } from "react";
+import AuthRouter from "../../../components/AuthRouter";
 
 export default function FeatureFlagsPage() {
-  return <admin.FeatureFlags />;
+  return (
+    <Suspense>
+      <AuthRouter>
+        <admin.FeatureFlags />
+      </AuthRouter>
+    </Suspense>
+  );
 }
