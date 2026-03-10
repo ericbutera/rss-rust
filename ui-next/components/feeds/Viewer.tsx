@@ -28,6 +28,21 @@ function useSafeHtml(html: string | null | undefined): string {
   return safe;
 }
 
+// TODO: can https://date-fns.org/ do this? this is messy
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
 interface ViewerProps {
   feedId: number;
 }
@@ -148,7 +163,12 @@ export default function Viewer({ feedId }: ViewerProps) {
                 {!isRead && (
                   <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                 )}
-                <span className="truncate">{article.title ?? article.url}</span>
+                <span className="truncate flex-1">
+                  {article.title ?? article.url}
+                </span>
+                <span className="text-xs opacity-40 shrink-0 font-normal">
+                  {relativeTime(article.created_at)}
+                </span>
               </span>
             </div>
             <div className="collapse-content text-sm">
@@ -172,7 +192,6 @@ export default function Viewer({ feedId }: ViewerProps) {
 }
 
 function ArticleBody({ article }: { article: ArticleResponse }) {
-  const [showIframe, setShowIframe] = useState(false);
   const safeContent = useSafeHtml(article.content);
   const safeDescription = useSafeHtml(article.description);
 
@@ -185,30 +204,11 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
         />
       )}
 
-      {article.content ? (
+      {article.content && (
         <div
           className="prose prose-sm max-w-none"
           dangerouslySetInnerHTML={{ __html: safeContent }}
         />
-      ) : (
-        <>
-          {showIframe ? (
-            <iframe
-              src={article.url}
-              className="w-full border border-base-300 rounded"
-              style={{ height: "600px" }}
-              sandbox="allow-scripts allow-same-origin allow-popups"
-              title={article.title ?? "Article"}
-            />
-          ) : (
-            <button
-              className="btn btn-outline btn-sm self-start"
-              onClick={() => setShowIframe(true)}
-            >
-              Load full article
-            </button>
-          )}
-        </>
       )}
 
       <a

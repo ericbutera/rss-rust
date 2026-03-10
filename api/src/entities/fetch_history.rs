@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::*;
-use sea_orm::{ConnectionTrait, DbErr, Set};
+use sea_orm::{ConnectionTrait, DbErr, FromQueryResult, QuerySelect, Set};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use utoipa::ToSchema;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize, ToSchema)]
@@ -12,6 +13,9 @@ pub struct Model {
     pub feed_id: i32,
     pub status_code: Option<i32>,
     pub etag: Option<String>,
+    pub error_message: Option<String>,
+    pub content_length: Option<i64>,
+    pub article_count: Option<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -63,17 +67,67 @@ impl Model {
             .and_then(|r| r.etag)
     }
 
+    /// Returns a map of feed_id → most recent fetch timestamp.
+    pub async fn last_fetch_times(
+        db: &impl ConnectionTrait,
+        feed_ids: &[i32],
+    ) -> Result<HashMap<i32, DateTime<Utc>>, DbErr> {
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+        #[derive(FromQueryResult)]
+        struct Row {
+            feed_id: i32,
+            last_fetched_at: DateTime<Utc>,
+        }
+
+        let rows = Entity::find()
+            .select_only()
+            .column(Column::FeedId)
+            .column_as(Column::CreatedAt.max(), "last_fetched_at")
+            .filter(Column::FeedId.is_in(feed_ids.to_vec()))
+            .group_by(Column::FeedId)
+            .into_model::<Row>()
+            .all(db)
+            .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|r| (r.feed_id, r.last_fetched_at))
+            .collect())
+    }
+
+    /// Returns the N most recent fetch history records for a feed.
+    pub async fn list_for_feed(
+        db: &impl ConnectionTrait,
+        feed_id: i32,
+        limit: u64,
+    ) -> Result<Vec<Self>, DbErr> {
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+        Entity::find()
+            .filter(Column::FeedId.eq(feed_id))
+            .order_by_desc(Column::CreatedAt)
+            .limit(limit)
+            .all(db)
+            .await
+    }
+
     /// Inserts a fetch history record for the given feed.
     pub async fn record(
         db: &impl ConnectionTrait,
         feed_id: i32,
         status_code: i32,
         etag: Option<&str>,
+        error_message: Option<&str>,
+        content_length: Option<i64>,
+        article_count: Option<i32>,
     ) -> Result<Self, DbErr> {
         ActiveModel {
             feed_id: Set(feed_id),
             status_code: Set(Some(status_code)),
             etag: Set(etag.map(str::to_string)),
+            error_message: Set(error_message.map(str::to_string)),
+            content_length: Set(content_length),
+            article_count: Set(article_count),
             ..Default::default()
         }
         .insert(db)

@@ -11,15 +11,17 @@ export default function Feeds() {
   return (
     <Layout>
       <div className="flex min-h-[calc(100vh-4rem)]">
-        {/* Sidebar — min 200px wide */}
+        {/* Sidebar — min 200px wide; outer aside has no overflow so tooltips can escape */}
         <aside
-          className="bg-base-200 border-r border-base-300 shrink-0 overflow-y-auto"
+          className="bg-base-200 border-r border-base-300 shrink-0 flex flex-col relative z-10"
           style={{ minWidth: "200px", width: "256px" }}
         >
-          <Menu
-            selectedFeedId={selectedFeedId}
-            onSelectFeed={setSelectedFeedId}
-          />
+          <div className="flex-1 overflow-y-auto">
+            <Menu
+              selectedFeedId={selectedFeedId}
+              onSelectFeed={setSelectedFeedId}
+            />
+          </div>
         </aside>
 
         {/* Content area */}

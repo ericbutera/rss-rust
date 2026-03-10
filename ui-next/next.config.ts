@@ -1,23 +1,39 @@
+import type { NextConfig } from "next";
 import fs from "node:fs";
 import path from "node:path";
 
-const localKaleido = path.resolve(
-  process.cwd(),
+const localKaleidoEntry = path.resolve(
+  __dirname,
   "../../kaleido/typescript/packages/kaleido/src/index.ts",
 );
 
-const nextConfig = {
+const localKaleidoEntryForTurbopack = path
+  .relative(__dirname, localKaleidoEntry)
+  .split(path.sep)
+  .join("/");
+
+const useLocalKaleido =
+  process.env.NODE_ENV !== "production" && fs.existsSync(localKaleidoEntry);
+
+const nextConfig: NextConfig = {
   output: "standalone",
-  // ensure Turbopack has an explicit config so builds won't error when a
-  // webpack customization (like an alias) is present
-  turbopack: {},
+  transpilePackages: ["@ericbutera/kaleido"],
   experimental: {
-    optimizePackageImports: ["@ericbutera/kaleido"],
+    externalDir: true,
   },
-  webpack: (config: any) => {
-    if (fs.existsSync(localKaleido)) {
-      config.resolve.alias = config.resolve.alias || {};
-      config.resolve.alias["@ericbutera/kaleido"] = localKaleido;
+  turbopack: {
+    resolveAlias: useLocalKaleido
+      ? {
+          "@ericbutera/kaleido": localKaleidoEntryForTurbopack,
+        }
+      : undefined,
+  },
+  webpack: (config) => {
+    if (useLocalKaleido) {
+      config.resolve.alias = {
+        ...(config.resolve.alias ?? {}),
+        "@ericbutera/kaleido": localKaleidoEntry,
+      };
     }
     return config;
   },

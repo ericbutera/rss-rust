@@ -78,6 +78,21 @@ impl Model {
         Entity::find_by_id(id).one(db).await
     }
 
+    /// Count of articles for a feed created after `since` (unread proxy).
+    /// Pass `None` to count all articles for the feed.
+    pub async fn unread_count(
+        db: &impl ConnectionTrait,
+        feed_id: i32,
+        since: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<u64, DbErr> {
+        use sea_orm::{EntityTrait, PaginatorTrait, QueryFilter};
+        let mut q = Entity::find().filter(Column::FeedId.eq(feed_id));
+        if let Some(ts) = since {
+            q = q.filter(Column::CreatedAt.gt(ts));
+        }
+        q.count(db).await
+    }
+
     /// Paginated list of articles for a feed, ordered newest-first.
     /// Returns `(items, total_count)`.
     pub async fn list_for_feed(

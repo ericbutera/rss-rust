@@ -25,6 +25,7 @@ use utoipa::OpenApi;
         crate::controllers::feeds::list_articles,
         crate::controllers::feeds::mark_feed_read,
         crate::controllers::feeds::mark_article_read,
+        crate::controllers::admin::fix_unread_drift,
     ),
     components(
         schemas(
@@ -47,6 +48,7 @@ use utoipa::OpenApi;
             crate::controllers::feeds::ArticleResponse,
             crate::controllers::feeds::ArticlesPage,
             crate::controllers::feeds::MessageResponse,
+            crate::controllers::admin::FixDriftResponse,
         )
     ),
     tags(

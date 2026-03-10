@@ -1,6 +1,11 @@
 "use client";
 
-import { faLinkSlash, faPlus, faRss } from "@fortawesome/free-solid-svg-icons";
+import {
+  faClockRotateLeft,
+  faLinkSlash,
+  faPlus,
+  faRss,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import {
@@ -8,6 +13,20 @@ import {
   useFeeds,
   type FeedResponse,
 } from "../../src/lib/queries";
+import FetchHistoryModal from "./FetchHistoryModal";
+
+interface MenuProps {
+  selectedFeedId: number | null;
+  onSelectFeed: (id: number | null) => void;
+}
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "never";
+  return new Date(iso).toLocaleString(undefined, {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
 
 interface MenuProps {
   selectedFeedId: number | null;
@@ -22,6 +41,7 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
   const [newUrl, setNewUrl] = useState("");
   const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [historyFeed, setHistoryFeed] = useState<FeedResponse | null>(null);
 
   async function handleAddFeed(e: React.FormEvent) {
     e.preventDefault();
@@ -111,28 +131,58 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
             </span>
           </li>
         )}
-        {feeds.map((feed: FeedResponse) => (
-          <li key={feed.id}>
-            <a
-              className={selectedFeedId === feed.id ? "active" : ""}
-              onClick={() =>
-                onSelectFeed(selectedFeedId === feed.id ? null : feed.id)
-              }
-            >
-              <FontAwesomeIcon icon={faRss} className="shrink-0 opacity-60" />
-              <span className="truncate flex-1">
-                {feed.name ?? new URL(feed.url).hostname}
-              </span>
-              {!feed.last_read_at && (
-                <span
-                  className="w-2 h-2 rounded-full bg-primary shrink-0"
-                  title="Unread"
-                />
-              )}
-            </a>
-          </li>
-        ))}
+        {feeds.map((feed: FeedResponse) => {
+          const tooltipText = `Subscribed: ${formatDate(feed.subscribed_at)}\nLast fetched: ${formatDate(feed.last_fetched_at)}`;
+          return (
+            <li key={feed.id}>
+              <div className="flex items-center gap-0 group">
+                <div
+                  className="tooltip tooltip-bottom flex-1 min-w-0"
+                  data-tip={tooltipText}
+                >
+                  <a
+                    className={`flex items-center gap-2 w-full ${selectedFeedId === feed.id ? "active" : ""}`}
+                    onClick={() =>
+                      onSelectFeed(selectedFeedId === feed.id ? null : feed.id)
+                    }
+                  >
+                    <FontAwesomeIcon
+                      icon={faRss}
+                      className="shrink-0 opacity-60"
+                    />
+                    <span className="truncate flex-1">
+                      {feed.name ?? new URL(feed.url).hostname}
+                    </span>
+                    {feed.unread_count > 0 && (
+                      <span className="badge badge-primary badge-sm shrink-0">
+                        {feed.unread_count}
+                      </span>
+                    )}
+                  </a>
+                </div>
+                <button
+                  className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-60 shrink-0"
+                  title="Fetch history"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHistoryFeed(feed);
+                  }}
+                >
+                  <FontAwesomeIcon icon={faClockRotateLeft} />
+                </button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
+
+      {historyFeed && (
+        <FetchHistoryModal
+          feedId={historyFeed.id}
+          feedName={historyFeed.name ?? new URL(historyFeed.url).hostname}
+          onClose={() => setHistoryFeed(null)}
+        />
+      )}
     </div>
   );
 }

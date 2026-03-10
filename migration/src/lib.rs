@@ -2,6 +2,8 @@
 #![allow(clippy::wildcard_imports)]
 pub use sea_orm_migration::prelude::*;
 mod m20260307_120000_init;
+mod m20260309_000000_add_unread_count_to_user_feeds;
+mod m20260309_100000_add_fetch_history_fields;
 
 pub struct Migrator;
 
@@ -15,6 +17,12 @@ impl MigratorTrait for Migrator {
         // Collect local migrations, sort them, then append so Kaleido runs first
         let mut locals: Vec<Box<dyn MigrationTrait>> = Vec::new();
         locals.push(Box::new(m20260307_120000_init::Migration));
+        locals.push(Box::new(
+            m20260309_000000_add_unread_count_to_user_feeds::Migration,
+        ));
+        locals.push(Box::new(
+            m20260309_100000_add_fetch_history_fields::Migration,
+        ));
 
         locals.sort_by_key(|m| m.name().to_string());
 

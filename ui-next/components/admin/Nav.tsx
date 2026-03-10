@@ -24,11 +24,29 @@ export default function Nav() {
         </Link>
       </li>
       <li>
+        <Link href="/admin/feeds" className={linkClass("/admin/feeds")}>
+          Feeds
+        </Link>
+      </li>
+      <li>
         <Link
           href="/admin/feature-flags"
           className={linkClass("/admin/feature-flags")}
         >
           Feature Flags
+        </Link>
+      </li>
+      <li>
+        <Link href="/admin/users" className={linkClass("/admin/users")}>
+          Users
+        </Link>
+      </li>
+      <li>
+        <Link
+          href="/admin/maintenance"
+          className={linkClass("/admin/maintenance")}
+        >
+          Maintenance
         </Link>
       </li>
     </ul>

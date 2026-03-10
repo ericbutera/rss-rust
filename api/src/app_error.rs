@@ -70,4 +70,11 @@ impl AppError {
             message: message.into(),
         }
     }
+
+    pub fn forbidden(message: impl Into<String>) -> Self {
+        Self {
+            code: StatusCode::FORBIDDEN,
+            message: message.into(),
+        }
+    }
 }

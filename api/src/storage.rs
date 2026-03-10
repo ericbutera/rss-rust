@@ -3,6 +3,7 @@ use crate::tasks::TaskQueue;
 use crate::tasks::{create_auth_service, AppAuthService};
 use auth::controllers::oauth::OAuthRouteStorage;
 use auth::{AuthRouteStorage, AuthStorage};
+use glass::background_tasks::BackgroundTasksStorage;
 use glass::feature_flags::{FeatureFlagService, FeatureFlagStorage};
 use migration::MigratorTrait;
 use sea_orm::DatabaseConnection;
@@ -50,6 +51,12 @@ impl FeatureFlagStorage for AppStorage {
 
     fn feature_flag_service(&self) -> &FeatureFlagService {
         &self.feature_flags
+    }
+}
+
+impl BackgroundTasksStorage for AppStorage {
+    fn db(&self) -> &DatabaseConnection {
+        &self.db
     }
 }
 

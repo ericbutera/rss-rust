@@ -3,11 +3,12 @@
 import { admin } from "@ericbutera/kaleido";
 import { Suspense } from "react";
 import AuthRouter from "../../../components/AuthRouter";
-export default function FeatureFlagsPage() {
+
+export default function AdminUsersPage() {
   return (
     <Suspense>
       <AuthRouter>
-        <admin.FeatureFlags />
+        <admin.Users />
       </AuthRouter>
     </Suspense>
   );

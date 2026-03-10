@@ -68,19 +68,22 @@ impl Model {
     }
 
     /// Upsert a read record for the given user and article.
+    /// Returns `true` if the article was newly marked read, `false` if it was already read.
     pub async fn mark_read(
         db: &impl ConnectionTrait,
         user_id: i32,
         article_id: i32,
-    ) -> Result<(), DbErr> {
+    ) -> Result<bool, DbErr> {
         use sea_orm::{ActiveModelTrait, EntityTrait};
         let now = Utc::now();
         match Entity::find_by_id((user_id, article_id)).one(db).await? {
             Some(existing) => {
+                let was_unread = existing.viewed_at.is_none();
                 let mut active: ActiveModel = existing.into();
                 active.viewed_at = Set(Some(now));
                 active.updated_at = Set(now);
                 active.update(db).await?;
+                Ok(was_unread)
             }
             None => {
                 ActiveModel {
@@ -91,8 +94,8 @@ impl Model {
                 }
                 .insert(db)
                 .await?;
+                Ok(true)
             }
         }
-        Ok(())
     }
 }

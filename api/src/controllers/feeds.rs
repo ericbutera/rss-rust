@@ -1,5 +1,5 @@
 use crate::app_error::AppError;
-use crate::entities::{articles, feeds, user_articles, user_feeds};
+use crate::entities::{articles, feeds, fetch_history, user_articles, user_feeds};
 use crate::storage::AppStorage;
 use auth::UserContext;
 use axum::{
@@ -27,6 +27,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds", post(create_feed))
         .route("/feeds/:id/articles", get(list_articles))
         .route("/feeds/:id/read", put(mark_feed_read))
+        .route("/feeds/:id/fetch-history", get(list_fetch_history))
         .route("/articles/:id/read", put(mark_article_read))
 }
 
@@ -49,10 +50,22 @@ pub struct FeedResponse {
     pub verified_at: Option<chrono::DateTime<chrono::Utc>>,
     /// When the user last marked all articles in this feed as read
     pub last_read_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// When the current user subscribed to this feed
+    pub subscribed_at: chrono::DateTime<chrono::Utc>,
+    /// When the feed was last fetched by the worker
+    pub last_fetched_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Number of unread articles (articles created after last_read_at, or all if never read)
+    pub unread_count: u64,
 }
 
 impl FeedResponse {
-    fn from_model(m: feeds::Model, last_read_at: Option<chrono::DateTime<chrono::Utc>>) -> Self {
+    fn from_model(
+        m: feeds::Model,
+        last_read_at: Option<chrono::DateTime<chrono::Utc>>,
+        subscribed_at: chrono::DateTime<chrono::Utc>,
+        last_fetched_at: Option<chrono::DateTime<chrono::Utc>>,
+        unread_count: u64,
+    ) -> Self {
         FeedResponse {
             id: m.id,
             url: m.url,
@@ -61,6 +74,34 @@ impl FeedResponse {
             updated_at: m.updated_at,
             verified_at: m.verified_at,
             last_read_at,
+            subscribed_at,
+            last_fetched_at,
+            unread_count,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct FetchHistoryResponse {
+    pub id: i32,
+    pub feed_id: i32,
+    pub status_code: Option<i32>,
+    pub error_message: Option<String>,
+    pub content_length: Option<i64>,
+    pub article_count: Option<i32>,
+    pub fetched_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl FetchHistoryResponse {
+    fn from_model(m: fetch_history::Model) -> Self {
+        FetchHistoryResponse {
+            id: m.id,
+            feed_id: m.feed_id,
+            status_code: m.status_code,
+            error_message: m.error_message,
+            content_length: m.content_length,
+            article_count: m.article_count,
+            fetched_at: m.created_at,
         }
     }
 }
@@ -158,19 +199,43 @@ pub async fn list_feeds(
         .iter()
         .map(|uf| (uf.feed_id, uf.all_articles_read_at))
         .collect();
+    let subscribed_at_map: HashMap<i32, chrono::DateTime<chrono::Utc>> = user_feed_rows
+        .iter()
+        .map(|uf| (uf.feed_id, uf.created_at))
+        .collect();
+    let unread_map: HashMap<i32, i32> = user_feed_rows
+        .iter()
+        .map(|uf| (uf.feed_id, uf.unread_count))
+        .collect();
     let feed_ids: Vec<i32> = user_feed_rows.into_iter().map(|uf| uf.feed_id).collect();
+
+    let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids)
+        .await
+        .unwrap_or_default();
 
     let feed_list = feeds::Model::find_active_by_ids(db, feed_ids).await?;
 
-    Ok(Json(
-        feed_list
-            .into_iter()
-            .map(|f| {
-                let last_read_at = read_map.get(&f.id).copied().flatten();
-                FeedResponse::from_model(f, last_read_at)
-            })
-            .collect(),
-    ))
+    let responses: Vec<FeedResponse> = feed_list
+        .into_iter()
+        .map(|f| {
+            let last_read_at = read_map.get(&f.id).copied().flatten();
+            let subscribed_at = subscribed_at_map
+                .get(&f.id)
+                .copied()
+                .unwrap_or_else(chrono::Utc::now);
+            let last_fetched_at = last_fetch_map.get(&f.id).copied();
+            let unread_count = unread_map.get(&f.id).copied().unwrap_or(0).max(0) as u64;
+            FeedResponse::from_model(
+                f,
+                last_read_at,
+                subscribed_at,
+                last_fetched_at,
+                unread_count,
+            )
+        })
+        .collect();
+
+    Ok(Json(responses))
 }
 
 /// Subscribe to a feed by URL (creates the feed if it doesn't exist yet)
@@ -218,7 +283,13 @@ pub async fn create_feed(
 
     Ok((
         StatusCode::CREATED,
-        Json(FeedResponse::from_model(feed, None)),
+        Json(FeedResponse::from_model(
+            feed,
+            None,
+            chrono::Utc::now(),
+            None,
+            0,
+        )),
     ))
 }
 
@@ -337,13 +408,68 @@ pub async fn mark_article_read(
     let user_id = user_ctx.user.id;
 
     // Verify article exists
-    articles::Model::find_by_id(db, id)
+    let article = articles::Model::find_by_id(db, id)
         .await?
         .ok_or_else(|| AppError::not_found("Article not found"))?;
 
-    user_articles::Model::mark_read(db, user_id, id).await?;
+    let newly_read = user_articles::Model::mark_read(db, user_id, id).await?;
+    if newly_read {
+        // Only decrement if the article is not already covered by a bulk mark-all-read.
+        // When mark_feed_read is called it zeros unread_count and sets all_articles_read_at
+        // but does NOT create user_articles rows. If the user later views an old article
+        // (created <= all_articles_read_at), mark_read returns true (no row existed), but
+        // the article was already accounted for in the zero-out — so no decrement is owed.
+        let should_decrement =
+            match user_feeds::Model::find_subscription(db, user_id, article.feed_id).await? {
+                Some(sub) => sub
+                    .all_articles_read_at
+                    .map_or(true, |read_at| article.created_at > read_at),
+                None => false,
+            };
+        if should_decrement {
+            user_feeds::Model::decrement_unread(db, user_id, article.feed_id).await?;
+        }
+    }
 
     Ok(Json(MessageResponse {
         message: "Article marked as read".to_string(),
     }))
+}
+
+/// List fetch history for a feed (most recent 50 entries)
+#[utoipa::path(
+    get,
+    path = "/feeds/{id}/fetch-history",
+    params(
+        ("id" = i32, Path, description = "Feed ID")
+    ),
+    responses(
+        (status = 200, description = "Fetch history", body = [FetchHistoryResponse]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Feed not found or not subscribed"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn list_fetch_history(
+    State(state): State<Arc<AppStorage>>,
+    user_ctx: UserContext<AppStorage>,
+    Path(id): Path<i32>,
+) -> Result<Json<Vec<FetchHistoryResponse>>, AppError> {
+    let db = &state.db;
+    let user_id = user_ctx.user.id;
+
+    // Only allow subscribers to view history
+    user_feeds::Model::find_subscription(db, user_id, id)
+        .await?
+        .ok_or_else(|| AppError::not_found("Feed subscription not found"))?;
+
+    let history = fetch_history::Model::list_for_feed(db, id, 50).await?;
+
+    Ok(Json(
+        history
+            .into_iter()
+            .map(FetchHistoryResponse::from_model)
+            .collect(),
+    ))
 }

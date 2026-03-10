@@ -11,6 +11,8 @@ export type FeedResponse = components["schemas"]["FeedResponse"];
 export type ArticleResponse = components["schemas"]["ArticleResponse"];
 export type ArticlesPage = components["schemas"]["ArticlesPage"];
 export type CreateFeedRequest = components["schemas"]["CreateFeedRequest"];
+export type FetchHistoryResponse =
+  components["schemas"]["FetchHistoryResponse"];
 
 // ── Feed queries ──────────────────────────────────────────────────────────────
 
@@ -77,9 +79,21 @@ export function useMarkArticleRead() {
             queryClient.invalidateQueries({
               queryKey: ["feeds", feedId, "articles"],
             });
+            queryClient.invalidateQueries({
+              queryKey: ["get", "/feeds"],
+            });
           }
         },
       });
     },
   };
+}
+
+export function useFetchHistory(feedId: number | null) {
+  return $api.useQuery(
+    "get",
+    "/feeds/{id}/fetch-history",
+    { params: { path: { id: feedId ?? 0 } } },
+    { enabled: feedId !== null },
+  );
 }

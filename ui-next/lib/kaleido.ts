@@ -9,6 +9,7 @@ kaleido.configure({
   auth: true,
   featureFlags: true,
   tasks: true,
+  adminUsers: true,
   api: $api,
   useQueryClient,
   toast,

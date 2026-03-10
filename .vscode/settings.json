@@ -21,6 +21,8 @@
     "pushd": true,
     "cargo update": true,
     "docker build": true,
-    "pnpm": true
+    "pnpm": true,
+    "docker exec": true,
+    "npx tsc": true
   }
 }
