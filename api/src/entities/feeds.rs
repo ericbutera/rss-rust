@@ -18,6 +18,7 @@ pub struct Model {
     pub verified_at: Option<DateTime<Utc>>,
     pub deactivated_at: Option<DateTime<Utc>>,
     pub created_by: Option<i32>,
+    pub fetch_interval_minutes: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -112,6 +113,7 @@ impl Model {
             verified_at: Set(None),
             deactivated_at: Set(None),
             created_by: Set(Some(created_by)),
+            fetch_interval_minutes: Set(1440),
             ..Default::default()
         }
         .insert(db)
@@ -121,5 +123,18 @@ impl Model {
     /// Returns true if this feed has been deactivated.
     pub fn is_deactivated(&self) -> bool {
         self.deactivated_at.is_some()
+    }
+
+    /// Set `verified_at` to the current time for this feed.
+    pub async fn mark_verified(db: &impl ConnectionTrait, id: i32) -> Result<(), DbErr> {
+        use sea_orm::{EntityTrait, IntoActiveModel};
+        let feed = Entity::find_by_id(id)
+            .one(db)
+            .await?
+            .ok_or_else(|| DbErr::RecordNotFound(format!("Feed {id} not found")))?;
+        let mut active = feed.into_active_model();
+        active.verified_at = Set(Some(Utc::now()));
+        active.update(db).await?;
+        Ok(())
     }
 }

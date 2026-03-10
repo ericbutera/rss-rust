@@ -21,6 +21,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/admin/feeds/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: { id: number };
+      cookie?: never;
+    };
+    get?: never;
+    /** Update a feed's fetch interval and enabled state */
+    put: operations["admin_update_feed"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/admin/feeds/{id}/fetch-history": {
     parameters: {
       query?: never;
@@ -319,6 +336,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/feeds/tasks/{task_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the status of a background task (e.g. feed verification) */
+    get: operations["get_task_status"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/feeds/{id}/read": {
     parameters: {
       query?: never;
@@ -389,6 +423,14 @@ export interface components {
       last_fetched_at?: string | null;
       /** Format: int64 */
       article_count: number;
+      /** Format: int32 */
+      fetch_interval_minutes: number;
+      enabled: boolean;
+    };
+    AdminUpdateFeedRequest: {
+      /** Format: int32 */
+      fetch_interval_minutes?: number | null;
+      enabled?: boolean | null;
     };
     FixDriftResponse: {
       /** @description Number of user_feed rows whose unread_count was recalculated */
@@ -431,6 +473,27 @@ export interface components {
     CreateFeedRequest: {
       name?: string | null;
       url: string;
+    };
+    /** @description Response returned when a new feed subscription is created. */
+    CreateFeedResponse: {
+      feed: components["schemas"]["FeedResponse"];
+      /**
+       * @description Background task ID for the feed verification job.
+       * Poll `GET /feeds/tasks/{task_id}` to track verification progress.
+       * `null` when subscribing to an already-verified feed.
+       */
+      task_id?: string | null;
+    };
+    /** @description Status of a background task (e.g. feed verification). */
+    TaskStatusResponse: {
+      id: string;
+      /** @description One of: pending, processing, completed, failed */
+      status: string;
+      error?: string | null;
+      /** Format: int32 */
+      attempts: number;
+      /** Format: int32 */
+      max_attempts: number;
     };
     FeatureFlagResponse: {
       description?: string | null;
@@ -1013,7 +1076,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["FeedResponse"];
+          "application/json": components["schemas"]["CreateFeedResponse"];
         };
       };
       /** @description Validation error */
@@ -1025,6 +1088,43 @@ export interface operations {
       };
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  get_task_status: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Background task ID */
+        task_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Task status */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TaskStatusResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Task not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -1220,6 +1320,60 @@ export interface operations {
       };
       /** @description Forbidden */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  admin_update_feed: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminUpdateFeedRequest"];
+      };
+    };
+    responses: {
+      /** @description Feed updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminFeedResponse"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };

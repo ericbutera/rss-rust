@@ -11,8 +11,13 @@ export type FeedResponse = components["schemas"]["FeedResponse"];
 export type ArticleResponse = components["schemas"]["ArticleResponse"];
 export type ArticlesPage = components["schemas"]["ArticlesPage"];
 export type CreateFeedRequest = components["schemas"]["CreateFeedRequest"];
+export type CreateFeedResponse = components["schemas"]["CreateFeedResponse"];
 export type FetchHistoryResponse =
   components["schemas"]["FetchHistoryResponse"];
+export type AdminFeed = components["schemas"]["AdminFeedResponse"];
+export type AdminUpdateFeedRequest =
+  components["schemas"]["AdminUpdateFeedRequest"];
+export type TaskStatusResponse = components["schemas"]["TaskStatusResponse"];
 
 // ── Feed queries ──────────────────────────────────────────────────────────────
 
@@ -43,10 +48,12 @@ export function useCreateFeed() {
 
   return {
     ...mutation,
-    mutateAsync: async (data: CreateFeedRequest) => {
+    mutateAsync: async (
+      data: CreateFeedRequest,
+    ): Promise<CreateFeedResponse> => {
       const result = await mutation.mutateAsync({ body: data });
       await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
-      return result;
+      return result as CreateFeedResponse;
     },
   };
 }
@@ -59,7 +66,6 @@ export function useMarkFeedRead() {
     mutate: (vars: Parameters<typeof mutation.mutate>[0]) => {
       mutation.mutate(vars, {
         onSuccess: () => {
-          // Invalidate feeds list so last_read_at updates in menu
           queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
         },
       });
@@ -96,4 +102,45 @@ export function useFetchHistory(feedId: number | null) {
     { params: { path: { id: feedId ?? 0 } } },
     { enabled: feedId !== null },
   );
+}
+
+export function useTaskStatus(taskId: string | null) {
+  return $api.useQuery(
+    "get",
+    "/feeds/tasks/{task_id}" as never,
+    { params: { path: { task_id: taskId ?? "" } } } as never,
+    {
+      enabled: taskId !== null && taskId !== "",
+      // Poll every 2 seconds until the task reaches a terminal state
+      refetchInterval: (query) => {
+        const status = (query.state.data as TaskStatusResponse | undefined)
+          ?.status;
+        return status === "completed" || status === "failed" ? false : 2000;
+      },
+    },
+  );
+}
+
+// ── Admin queries ─────────────────────────────────────────────────────────────
+
+export function useAdminFeeds() {
+  const resp = $api.useQuery("get", "/admin/feeds", {});
+  return { ...resp, data: (resp.data ?? []) as AdminFeed[] };
+}
+
+export function useAdminFeedHistory(feedId: number | null) {
+  return $api.useQuery(
+    "get",
+    "/admin/feeds/{id}/fetch-history",
+    { params: { path: { id: feedId ?? 0 } } },
+    { enabled: feedId !== null },
+  );
+}
+
+export function useUpdateAdminFeed() {
+  return $api.useMutation("put", "/admin/feeds/{id}");
+}
+
+export function useFixUnreadDrift() {
+  return $api.useMutation("post", "/admin/tasks/fix-unread-drift");
 }

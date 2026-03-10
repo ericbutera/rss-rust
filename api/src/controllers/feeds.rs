@@ -21,6 +21,38 @@ fn url_hash(url: &str) -> String {
     hex::encode(hasher.finalize())
 }
 
+/// Normalize a feed URL to a canonical form to prevent duplicate entries.
+/// - Strips fragment (#...)
+/// - Sorts query parameters alphabetically
+/// - Preserves scheme, host, path
+fn normalize_url(raw: &str) -> Result<String, AppError> {
+    let mut parsed = url::Url::parse(raw).map_err(|_| AppError::bad_request("Invalid URL"))?;
+
+    // Strip fragment — fragments are client-side only and irrelevant for feeds
+    parsed.set_fragment(None);
+
+    // Sort query parameters for a consistent representation
+    let query_string = parsed.query().map(|q| q.to_string());
+    if let Some(q) = query_string {
+        let mut pairs: Vec<(String, String)> = url::form_urlencoded::parse(q.as_bytes())
+            .map(|(k, v)| (k.into_owned(), v.into_owned()))
+            .collect();
+        pairs.sort();
+        pairs.dedup();
+
+        if pairs.is_empty() {
+            parsed.set_query(None);
+        } else {
+            let new_query = url::form_urlencoded::Serializer::new(String::new())
+                .extend_pairs(pairs.iter())
+                .finish();
+            parsed.set_query(Some(&new_query));
+        }
+    }
+
+    Ok(parsed.to_string())
+}
+
 pub fn routes() -> Router<Arc<AppStorage>> {
     Router::new()
         .route("/feeds", get(list_feeds))
@@ -28,6 +60,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds/:id/articles", get(list_articles))
         .route("/feeds/:id/read", put(mark_feed_read))
         .route("/feeds/:id/fetch-history", get(list_fetch_history))
+        .route("/feeds/tasks/:task_id", get(get_task_status))
         .route("/articles/:id/read", put(mark_article_read))
 }
 
@@ -147,6 +180,27 @@ pub struct MessageResponse {
     pub message: String,
 }
 
+/// Response returned when a new feed subscription is created.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CreateFeedResponse {
+    pub feed: FeedResponse,
+    /// Background task ID for the feed verification job.
+    /// Poll `GET /feeds/tasks/{task_id}` to track verification progress.
+    /// `None` when subscribing to an already-verified feed.
+    pub task_id: Option<String>,
+}
+
+/// Status of a background task (e.g. feed verification).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct TaskStatusResponse {
+    pub id: String,
+    /// One of: pending, processing, completed, failed
+    pub status: String,
+    pub error: Option<String>,
+    pub attempts: i32,
+    pub max_attempts: i32,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ArticlesQuery {
     /// Page number (1-based)
@@ -244,7 +298,7 @@ pub async fn list_feeds(
     path = "/feeds",
     request_body = CreateFeedRequest,
     responses(
-        (status = 201, description = "Subscribed to feed", body = FeedResponse),
+        (status = 201, description = "Subscribed to feed", body = CreateFeedResponse),
         (status = 400, description = "Validation error"),
         (status = 401, description = "Unauthorized"),
     ),
@@ -255,21 +309,32 @@ pub async fn create_feed(
     State(state): State<Arc<AppStorage>>,
     user_ctx: UserContext<AppStorage>,
     Json(payload): Json<CreateFeedRequest>,
-) -> Result<(StatusCode, Json<FeedResponse>), AppError> {
+) -> Result<(StatusCode, Json<CreateFeedResponse>), AppError> {
     payload
         .validate()
         .map_err(|e| AppError::bad_request(e.to_string()))?;
 
     let db = &state.db;
     let user_id = user_ctx.user.id;
-    let hash = url_hash(&payload.url);
+
+    // Normalize the URL before hashing to prevent duplicate entries from
+    // superficially different URLs (sorted query params, no fragment).
+    let normalized_url = normalize_url(&payload.url)?;
+    let hash = url_hash(&normalized_url);
 
     // Find or create the Feed record
-    let feed = match feeds::Model::find_by_url_hash(db, &hash).await? {
-        Some(existing) => existing,
+    let (feed, is_new) = match feeds::Model::find_by_url_hash(db, &hash).await? {
+        Some(existing) => (existing, false),
         None => {
-            feeds::Model::create(db, payload.url.clone(), hash, payload.name.clone(), user_id)
-                .await?
+            let created = feeds::Model::create(
+                db,
+                normalized_url.clone(),
+                hash,
+                payload.name.clone(),
+                user_id,
+            )
+            .await?;
+            (created, true)
         }
     };
 
@@ -281,16 +346,69 @@ pub async fn create_feed(
         user_feeds::Model::create(db, user_id, feed.id).await?;
     }
 
+    // Enqueue a verification task for new, unverified feeds
+    let task_id = if is_new || feed.verified_at.is_none() {
+        state
+            .tasks
+            .inner()
+            .enqueue(
+                "feed_verifier".to_string(),
+                serde_json::json!({ "feed_id": feed.id }),
+            )
+            .await
+            .map(|r| Some(r.id))
+            .unwrap_or_else(|e| {
+                tracing::warn!(feed_id = feed.id, "failed to enqueue feed_verifier: {e:?}");
+                None
+            })
+    } else {
+        None
+    };
+
     Ok((
         StatusCode::CREATED,
-        Json(FeedResponse::from_model(
-            feed,
-            None,
-            chrono::Utc::now(),
-            None,
-            0,
-        )),
+        Json(CreateFeedResponse {
+            feed: FeedResponse::from_model(feed, None, chrono::Utc::now(), None, 0),
+            task_id,
+        }),
     ))
+}
+
+/// Get the status of a background task (e.g. feed verification)
+#[utoipa::path(
+    get,
+    path = "/feeds/tasks/{task_id}",
+    params(
+        ("task_id" = String, Path, description = "Background task ID")
+    ),
+    responses(
+        (status = 200, description = "Task status", body = TaskStatusResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Task not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn get_task_status(
+    _user: UserContext<AppStorage>,
+    State(state): State<Arc<AppStorage>>,
+    Path(task_id): Path<String>,
+) -> Result<Json<TaskStatusResponse>, AppError> {
+    let task = state
+        .tasks
+        .inner()
+        .get_task(&task_id)
+        .await
+        .map_err(|_| AppError::internal_error("Failed to query task status"))?
+        .ok_or_else(|| AppError::not_found("Task not found"))?;
+
+    Ok(Json(TaskStatusResponse {
+        id: task.id,
+        status: task.status.as_str().to_string(),
+        error: task.error,
+        attempts: task.attempts,
+        max_attempts: task.max_attempts,
+    }))
 }
 
 /// List articles for a feed

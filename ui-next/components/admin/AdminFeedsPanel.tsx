@@ -1,11 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { components } from "../../src/lib/openapi/react-query/api";
-import { $api } from "../../src/lib/queries";
+import {
+  useAdminFeedHistory,
+  useAdminFeeds,
+  useUpdateAdminFeed,
+  type AdminFeed,
+  type FetchHistoryResponse,
+} from "../../src/lib/queries";
 
-type AdminFeed = components["schemas"]["AdminFeedResponse"];
-type FetchHistory = components["schemas"]["FetchHistoryResponse"];
+const INTERVAL_OPTIONS = [
+  { label: "Every 30 minutes", value: 30 },
+  { label: "Hourly", value: 60 },
+  { label: "Every 6 hours", value: 360 },
+  { label: "Every 12 hours", value: 720 },
+  { label: "Daily", value: 1440 },
+  { label: "Weekly", value: 10080 },
+];
+
+function formatInterval(minutes: number): string {
+  const opt = INTERVAL_OPTIONS.find((o) => o.value === minutes);
+  if (opt) return opt.label;
+  if (minutes < 60) return `Every ${minutes}m`;
+  if (minutes < 1440) return `Every ${minutes / 60}h`;
+  return `Every ${minutes / 1440}d`;
+}
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -38,14 +57,10 @@ function HistoryModal({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  // TODO: this should use a function in queries.ts, move there, follow existing patterns!
-  const { data, isLoading } = $api.useQuery(
-    "get",
-    "/admin/feeds/{id}/fetch-history",
-    { params: { path: { id: feed.id } } },
-  );
+  const { data, isLoading } = useAdminFeedHistory(feed.id);
 
-  const history: FetchHistory[] = (data as FetchHistory[] | undefined) ?? [];
+  const history: FetchHistoryResponse[] =
+    (data as FetchHistoryResponse[] | undefined) ?? [];
 
   useEffect(() => {
     dialogRef.current?.showModal();
@@ -113,14 +128,136 @@ function HistoryModal({
   );
 }
 
+function EditModal({
+  feed,
+  onClose,
+  onSaved,
+}: {
+  feed: AdminFeed;
+  onClose: () => void;
+  onSaved: (updated: AdminFeed) => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [enabled, setEnabled] = useState(feed.enabled);
+  const [intervalMinutes, setIntervalMinutes] = useState(
+    feed.fetch_interval_minutes,
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useUpdateAdminFeed();
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      const result = await mutation.mutateAsync({
+        params: { path: { id: feed.id } },
+        body: { enabled, fetch_interval_minutes: intervalMinutes },
+      });
+      onSaved(result as AdminFeed);
+      dialogRef.current?.close();
+    } catch {
+      setError("Failed to update feed. Please try again.");
+    }
+  }
+
+  return (
+    <dialog ref={dialogRef} className="modal" onClose={onClose}>
+      <div className="modal-box">
+        <h3 className="font-bold text-lg mb-1">Edit Feed</h3>
+        <p className="text-sm text-base-content/60 mb-4 truncate">
+          {feed.name ?? feed.url}
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">Fetch Settings</legend>
+
+            <div className="flex items-center gap-3 mb-4">
+              <input
+                type="checkbox"
+                id="feed-enabled"
+                className="toggle toggle-success"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+              />
+              <label htmlFor="feed-enabled" className="cursor-pointer">
+                {enabled ? "Enabled" : "Disabled"}
+              </label>
+            </div>
+
+            <label className="label" htmlFor="feed-interval">
+              Fetch interval
+            </label>
+            <select
+              id="feed-interval"
+              className="select select-bordered w-full"
+              value={intervalMinutes}
+              onChange={(e) => setIntervalMinutes(Number(e.target.value))}
+              disabled={!enabled}
+            >
+              {INTERVAL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </fieldset>
+
+          {error && (
+            <div role="alert" className="alert alert-error mt-4">
+              {error}
+            </div>
+          )}
+
+          <div className="modal-action">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => dialogRef.current?.close()}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? (
+                <span className="loading loading-spinner loading-xs" />
+              ) : (
+                "Save"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+      <form method="dialog" className="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  );
+}
+
 export default function AdminFeedsPanel() {
   const [historyFeed, setHistoryFeed] = useState<AdminFeed | null>(null);
+  const [editFeed, setEditFeed] = useState<AdminFeed | null>(null);
+  const [feedList, setFeedList] = useState<AdminFeed[]>([]);
 
-  const {
-    data: feeds = [],
-    isLoading,
-    isError,
-  } = $api.useQuery("get", "/admin/feeds", {});
+  const { data: feeds = [], isLoading, isError } = useAdminFeeds();
+
+  useEffect(() => {
+    setFeedList(feeds as AdminFeed[]);
+  }, [feeds]);
+
+  function handleSaved(updated: AdminFeed) {
+    setFeedList((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+    setEditFeed(updated);
+  }
 
   if (isLoading) {
     return (
@@ -140,7 +277,7 @@ export default function AdminFeedsPanel() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">All Feeds ({feeds.length})</h2>
+      <h2 className="text-xl font-bold mb-4">All Feeds ({feedList.length})</h2>
 
       <div className="overflow-x-auto">
         <table className="table table-zebra table-sm">
@@ -149,14 +286,16 @@ export default function AdminFeedsPanel() {
               <th>ID</th>
               <th>Name / URL</th>
               <th className="text-right">Articles</th>
-              <th>Last Fetched</th>
+              <th>Interval</th>
+              <th>Status</th>
               <th>Verified</th>
               <th>Created</th>
+              <th>Last Fetched</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {feeds.map((feed) => (
+            {feedList.map((feed) => (
               <tr key={feed.id} className="hover">
                 <td className="font-mono text-xs">{feed.id}</td>
                 <td>
@@ -166,7 +305,16 @@ export default function AdminFeedsPanel() {
                   </div>
                 </td>
                 <td className="text-right">{feed.article_count}</td>
-                <td className="text-xs">{formatDate(feed.last_fetched_at)}</td>
+                <td className="text-xs">
+                  {formatInterval(feed.fetch_interval_minutes)}
+                </td>
+                <td>
+                  {feed.enabled ? (
+                    <span className="badge badge-success badge-sm">Active</span>
+                  ) : (
+                    <span className="badge badge-ghost badge-sm">Disabled</span>
+                  )}
+                </td>
                 <td className="text-xs">
                   {feed.verified_at ? (
                     <span className="badge badge-success badge-sm">Yes</span>
@@ -175,13 +323,22 @@ export default function AdminFeedsPanel() {
                   )}
                 </td>
                 <td className="text-xs">{formatDate(feed.created_at)}</td>
+                <td className="text-xs">{formatDate(feed.last_fetched_at)}</td>
                 <td>
-                  <button
-                    className="btn btn-xs btn-ghost"
-                    onClick={() => setHistoryFeed(feed)}
-                  >
-                    History
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      className="btn btn-xs btn-primary"
+                      onClick={() => setEditFeed(feed)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-xs btn-ghost"
+                      onClick={() => setHistoryFeed(feed)}
+                    >
+                      History
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -191,6 +348,14 @@ export default function AdminFeedsPanel() {
 
       {historyFeed && (
         <HistoryModal feed={historyFeed} onClose={() => setHistoryFeed(null)} />
+      )}
+
+      {editFeed && (
+        <EditModal
+          feed={editFeed}
+          onClose={() => setEditFeed(null)}
+          onSaved={handleSaved}
+        />
       )}
     </div>
   );

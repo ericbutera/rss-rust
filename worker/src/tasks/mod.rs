@@ -37,6 +37,7 @@ pub async fn register_default_processors(
     db: Arc<sea_orm::DatabaseConnection>,
 ) -> Result<TaskWorker, WorkerError> {
     let fetcher = Arc::new(FeedFetcher::new(db.clone()));
+    let verifier = Arc::new(FeedVerifier::new(db.clone()));
 
     // Spawn the cron scheduler so feed_fetcher tasks are enqueued on schedule
     let db_for_scheduler = (*db).clone();
@@ -52,5 +53,7 @@ pub async fn register_default_processors(
         }
     });
 
-    Ok(worker.register_processor(fetcher))
+    Ok(worker
+        .register_processor(fetcher)
+        .register_processor(verifier))
 }

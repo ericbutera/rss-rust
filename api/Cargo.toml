@@ -34,3 +34,4 @@ sha2 = "0.10"
 hex = "0.4"
 chrono = { workspace = true }
 validator = { version = "0.20", features = ["derive"] }
+url = "2"

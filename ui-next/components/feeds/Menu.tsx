@@ -13,7 +13,9 @@ import {
   useFeeds,
   type FeedResponse,
 } from "../../src/lib/queries";
+import { usePendingVerifications } from "../../src/lib/usePendingVerifications";
 import FetchHistoryModal from "./FetchHistoryModal";
+import VerificationIndicator from "./VerificationIndicator";
 
 interface MenuProps {
   selectedFeedId: number | null;
@@ -28,14 +30,14 @@ function formatDate(iso: string | null | undefined): string {
   });
 }
 
-interface MenuProps {
-  selectedFeedId: number | null;
-  onSelectFeed: (id: number | null) => void;
-}
-
 export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
   const { data: feeds, isLoading } = useFeeds();
   const { mutateAsync: createFeed, isPending } = useCreateFeed();
+  const {
+    verifications,
+    add: addVerification,
+    remove: removeVerification,
+  } = usePendingVerifications();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newUrl, setNewUrl] = useState("");
@@ -47,7 +49,13 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
     e.preventDefault();
     setError(null);
     try {
-      await createFeed({ url: newUrl, name: newName || undefined });
+      const result = await createFeed({
+        url: newUrl,
+        name: newName || undefined,
+      });
+      if (result.task_id) {
+        addVerification(result.feed.id, result.task_id);
+      }
       setNewUrl("");
       setNewName("");
       setShowAddForm(false);
@@ -133,6 +141,7 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
         )}
         {feeds.map((feed: FeedResponse) => {
           const tooltipText = `Subscribed: ${formatDate(feed.subscribed_at)}\nLast fetched: ${formatDate(feed.last_fetched_at)}`;
+          const taskId = verifications[feed.id];
           return (
             <li key={feed.id}>
               <div className="flex items-center gap-0 group">
@@ -153,6 +162,13 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
                     <span className="truncate flex-1">
                       {feed.name ?? new URL(feed.url).hostname}
                     </span>
+                    {taskId && (
+                      <VerificationIndicator
+                        feed={feed}
+                        taskId={taskId}
+                        onDone={() => removeVerification(feed.id)}
+                      />
+                    )}
                     {feed.unread_count > 0 && (
                       <span className="badge badge-primary badge-sm shrink-0">
                         {feed.unread_count}

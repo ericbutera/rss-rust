@@ -25,7 +25,10 @@ use utoipa::OpenApi;
         crate::controllers::feeds::list_articles,
         crate::controllers::feeds::mark_feed_read,
         crate::controllers::feeds::mark_article_read,
+        crate::controllers::feeds::get_task_status,
+        crate::controllers::feeds::list_fetch_history,
         crate::controllers::admin::fix_unread_drift,
+        crate::controllers::admin::update_feed,
     ),
     components(
         schemas(
@@ -47,8 +50,13 @@ use utoipa::OpenApi;
             crate::controllers::feeds::FeedResponse,
             crate::controllers::feeds::ArticleResponse,
             crate::controllers::feeds::ArticlesPage,
+            crate::controllers::feeds::FetchHistoryResponse,
             crate::controllers::feeds::MessageResponse,
+            crate::controllers::feeds::CreateFeedResponse,
+            crate::controllers::feeds::TaskStatusResponse,
             crate::controllers::admin::FixDriftResponse,
+            crate::controllers::admin::AdminFeedResponse,
+            crate::controllers::admin::AdminUpdateFeedRequest,
         )
     ),
     tags(

@@ -1,7 +1,8 @@
 use anyhow::Context;
-use api::entities::{articles, feeds, user_feeds};
+use api::entities::{articles, feeds, fetch_history, user_feeds};
 use async_trait::async_trait;
 use background_jobs::worker::TaskProcessor;
+use chrono::Utc;
 use feed_rs::parser;
 use reqwest::header::{ETAG, IF_NONE_MATCH};
 use sea_orm::DatabaseConnection;
@@ -178,12 +179,10 @@ impl FeedFetcher {
     }
 
     async fn last_etag(&self, feed_id: i32) -> Option<String> {
-        use api::entities::fetch_history;
         fetch_history::Model::last_etag_for_feed(self.db.as_ref(), feed_id).await
     }
 
     async fn record_history(&self, feed_id: i32, result: &FeedFetchResult, article_count: i32) {
-        use api::entities::fetch_history;
         if let Err(e) = fetch_history::Model::record(
             self.db.as_ref(),
             feed_id,
@@ -220,13 +219,34 @@ impl TaskProcessor for FeedFetcher {
 
         let active_feeds = feeds::Model::find_active(db).await?;
 
-        tracing::info!(count = active_feeds.len(), "processing feeds");
+        tracing::info!(count = active_feeds.len(), "checking feeds for due fetches");
 
+        let feed_ids: Vec<i32> = active_feeds.iter().map(|f| f.id).collect();
+        let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids).await?;
+        let now = Utc::now();
+
+        let mut due_count = 0usize;
         for feed in &active_feeds {
+            let is_due = match last_fetch_map.get(&feed.id) {
+                None => true, // never fetched
+                Some(last) => (now - *last).num_minutes() >= feed.fetch_interval_minutes as i64,
+            };
+
+            if !is_due {
+                continue;
+            }
+
+            due_count += 1;
             if let Err(e) = self.process_feed(feed).await {
                 tracing::error!(feed_id = feed.id, url = %feed.url, "failed to fetch feed: {e:?}");
             }
         }
+
+        tracing::info!(
+            due = due_count,
+            total = active_feeds.len(),
+            "feed fetch run complete"
+        );
 
         Ok(())
     }

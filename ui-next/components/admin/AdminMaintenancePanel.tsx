@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { $api } from "../../src/lib/queries";
+import { useFixUnreadDrift } from "../../src/lib/queries";
 
 export default function AdminMaintenancePanel() {
   const [result, setResult] = useState<{
@@ -10,7 +10,7 @@ export default function AdminMaintenancePanel() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const mutation = $api.useMutation("post", "/admin/tasks/fix-unread-drift");
+  const mutation = useFixUnreadDrift();
 
   async function runFixDrift() {
     setResult(null);

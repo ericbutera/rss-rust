@@ -4,17 +4,18 @@ use crate::storage::AppStorage;
 use auth::AdminUserContext;
 use axum::{
     extract::{Path, State},
-    routing::{get, post},
+    routing::{get, post, put},
     Json, Router,
 };
-use sea_orm::{EntityTrait, QueryOrder};
-use serde::Serialize;
+use sea_orm::{ActiveModelTrait, EntityTrait, QueryOrder, Set};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use utoipa::ToSchema;
 
 pub fn routes() -> Router<Arc<AppStorage>> {
     Router::new()
         .route("/feeds", get(list_feeds))
+        .route("/feeds/:id", put(update_feed))
         .route("/feeds/:id/fetch-history", get(list_feed_fetch_history))
         .route("/tasks/fix-unread-drift", post(fix_unread_drift))
 }
@@ -31,6 +32,8 @@ pub struct AdminFeedResponse {
     pub verified_at: Option<chrono::DateTime<chrono::Utc>>,
     pub last_fetched_at: Option<chrono::DateTime<chrono::Utc>>,
     pub article_count: u64,
+    pub fetch_interval_minutes: i32,
+    pub enabled: bool,
 }
 
 async fn list_feeds(
@@ -61,10 +64,87 @@ async fn list_feeds(
             verified_at: feed.verified_at,
             last_fetched_at,
             article_count,
+            fetch_interval_minutes: feed.fetch_interval_minutes,
+            enabled: feed.deactivated_at.is_none(),
         });
     }
 
     Ok(Json(result))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct AdminUpdateFeedRequest {
+    pub fetch_interval_minutes: Option<i32>,
+    pub enabled: Option<bool>,
+}
+
+/// Update a feed's fetch interval and enabled/disabled state.
+#[utoipa::path(
+    put,
+    path = "/admin/feeds/{id}",
+    request_body = AdminUpdateFeedRequest,
+    responses(
+        (status = 200, description = "Feed updated", body = AdminFeedResponse),
+        (status = 400, description = "Invalid request"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden"),
+        (status = 404, description = "Feed not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "admin"
+)]
+async fn update_feed(
+    _admin: AdminUserContext<AppStorage>,
+    State(state): State<Arc<AppStorage>>,
+    Path(feed_id): Path<i32>,
+    Json(req): Json<AdminUpdateFeedRequest>,
+) -> Result<Json<AdminFeedResponse>, AppError> {
+    let db = &state.db;
+
+    let feed = feeds::Entity::find_by_id(feed_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::not_found("Feed not found"))?;
+
+    let mut active: feeds::ActiveModel = feed.into();
+
+    if let Some(interval) = req.fetch_interval_minutes {
+        if interval < 1 {
+            return Err(AppError::bad_request(
+                "fetch_interval_minutes must be at least 1",
+            ));
+        }
+        active.fetch_interval_minutes = Set(interval);
+    }
+
+    if let Some(enabled) = req.enabled {
+        if enabled {
+            active.deactivated_at = Set(None);
+        } else {
+            active.deactivated_at = Set(Some(chrono::Utc::now()));
+        }
+    }
+
+    let updated = active.update(db).await?;
+
+    let last_fetch_map = fetch_history::Model::last_fetch_times(db, &[updated.id]).await?;
+    let last_fetched_at = last_fetch_map.get(&updated.id).copied();
+    let article_count = articles::Model::unread_count(db, updated.id, None)
+        .await
+        .unwrap_or(0);
+
+    Ok(Json(AdminFeedResponse {
+        id: updated.id,
+        url: updated.url,
+        name: updated.name,
+        created_at: updated.created_at,
+        updated_at: updated.updated_at,
+        verified_at: updated.verified_at,
+        last_fetched_at,
+        article_count,
+        fetch_interval_minutes: updated.fetch_interval_minutes,
+        enabled: updated.deactivated_at.is_none(),
+    }))
 }
 
 async fn list_feed_fetch_history(
