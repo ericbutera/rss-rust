@@ -1,7 +1,7 @@
 "use client";
 
+import { useFixUnreadDrift } from "@/lib/queries";
 import { useState } from "react";
-import { useFixUnreadDrift } from "../../src/lib/queries";
 
 export default function AdminMaintenancePanel() {
   const [result, setResult] = useState<{

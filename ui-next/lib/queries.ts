@@ -1,7 +1,7 @@
+import type { components, paths } from "@/lib/react-query/api";
 import { createClient, createFetchClient } from "@ericbutera/kaleido";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "./config";
-import type { components, paths } from "./openapi/react-query/api";
 
 const fetchClient = createFetchClient({ baseUrl: API_URL });
 export const $api = createClient<paths>(fetchClient);
@@ -156,6 +156,13 @@ export function useAdminFeedHistory(feedId: number | null, page = 1) {
 
 export function useUpdateAdminFeed() {
   return $api.useMutation("put", "/admin/feeds/{id}");
+}
+
+// ── Invalidation helpers ──────────────────────────────────────────────────────
+
+export function useInvalidateFeeds() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
 }
 
 export function useFixUnreadDrift() {

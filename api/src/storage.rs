@@ -3,7 +3,7 @@ use crate::tasks::TaskQueue;
 use crate::tasks::{create_auth_service, AppAuthService};
 use auth::controllers::oauth::OAuthRouteStorage;
 use auth::{AuthRouteStorage, AuthStorage};
-use glass::background_tasks::BackgroundTasksStorage;
+use background_jobs::admin::BackgroundTasksStorage;
 use glass::feature_flags::{FeatureFlagService, FeatureFlagStorage};
 use migration::MigratorTrait;
 use sea_orm::DatabaseConnection;

@@ -1368,7 +1368,6 @@ version = "0.0.1"
 dependencies = [
  "auth",
  "axum",
- "background_jobs",
  "chrono",
  "handlebars",
  "lettre",

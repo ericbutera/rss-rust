@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Pagination } from "@ericbutera/kaleido";
 import {
   useAdminFeedHistory,
   useAdminFeeds,
@@ -9,7 +7,9 @@ import {
   type AdminFeed,
   type FetchHistoryPage,
   type FetchHistoryResponse,
-} from "../../src/lib/queries";
+} from "@/lib/queries";
+import { Pagination } from "@ericbutera/kaleido";
+import { useEffect, useRef, useState } from "react";
 
 const INTERVAL_OPTIONS = [
   { label: "Every 30 minutes", value: 30 },

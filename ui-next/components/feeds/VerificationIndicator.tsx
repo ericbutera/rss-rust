@@ -1,13 +1,12 @@
 "use client";
 
+import { useInvalidateFeeds, useTaskStatus, type FeedResponse } from "@/lib/queries";
 import {
   faCircleCheck,
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { useTaskStatus, type FeedResponse } from "../../src/lib/queries";
 
 interface VerificationIndicatorProps {
   feed: FeedResponse;
@@ -25,7 +24,7 @@ export default function VerificationIndicator({
   taskId,
   onDone,
 }: VerificationIndicatorProps) {
-  const queryClient = useQueryClient();
+  const invalidateFeeds = useInvalidateFeeds();
   const { data: rawData } = useTaskStatus(taskId);
   const status = (rawData as { status?: string } | undefined)?.status;
 
@@ -40,11 +39,11 @@ export default function VerificationIndicator({
   useEffect(() => {
     if (status === "completed") {
       // Refresh the feed list so verified_at propagates into the response.
-      queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+      invalidateFeeds();
       const t = setTimeout(onDone, 3000);
       return () => clearTimeout(t);
     }
-  }, [status, onDone, queryClient]);
+  }, [status, onDone, invalidateFeeds]);
 
   // Already verified server-side — render nothing while the cleanup effect runs.
   if (feed.verified_at) return null;

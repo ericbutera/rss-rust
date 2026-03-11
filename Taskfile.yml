@@ -79,5 +79,5 @@ tasks:
           fi
           sleep 2
         done
-      - npx openapi-typescript {{.OPENAPI_TMP}} --output ui-next/src/lib/openapi/react-query/api.d.ts
+      - npx openapi-typescript {{.OPENAPI_TMP}} --output ui-next/lib/react-query/api.d.ts
       - rm -f {{.OPENAPI_TMP}}

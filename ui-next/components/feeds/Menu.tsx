@@ -1,27 +1,15 @@
 "use client";
 
-import {
-  faClockRotateLeft,
-  faLinkSlash,
-  faPlus,
-  faRss,
-  faTrash,
-} from "@fortawesome/free-solid-svg-icons";
+import { useCreateFeed, useFeeds, type FeedResponse } from "@/lib/queries";
+import { usePendingVerifications } from "@/lib/usePendingVerifications";
+import { faLinkSlash, faPlus, faRss } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
-import {
-  useCreateFeed,
-  useFeeds,
-  useUnsubscribeFeed,
-  type FeedResponse,
-} from "../../src/lib/queries";
-import { usePendingVerifications } from "../../src/lib/usePendingVerifications";
-import FetchHistoryModal from "./FetchHistoryModal";
 import VerificationIndicator from "./VerificationIndicator";
 
 interface MenuProps {
-  selectedFeedId: number | null;
-  onSelectFeed: (id: number | null) => void;
+  selectedFeed: FeedResponse | null;
+  onSelectFeed: (feed: FeedResponse | null) => void;
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -32,10 +20,9 @@ function formatDate(iso: string | null | undefined): string {
   });
 }
 
-export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
+export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
   const { data: feeds, isLoading } = useFeeds();
   const { mutateAsync: createFeed, isPending } = useCreateFeed();
-  const { mutateAsync: unsubscribeFeed } = useUnsubscribeFeed();
   const {
     verifications,
     add: addVerification,
@@ -46,7 +33,6 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
   const [newUrl, setNewUrl] = useState("");
   const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [historyFeed, setHistoryFeed] = useState<FeedResponse | null>(null);
 
   async function handleAddFeed(e: React.FormEvent) {
     e.preventDefault();
@@ -143,9 +129,7 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
           </li>
         )}
         {feeds.map((feed: FeedResponse) => {
-          const tooltipText = `Subscribed: ${formatDate(feed.subscribed_at)}\nLast fetched: ${formatDate(feed.last_fetched_at)}`;
           const taskId = verifications[feed.id] ?? null;
-          // TODO: compute during initial feed add, not here. allow customization on UserFFeed
           const label =
             feed.name ??
             (() => {
@@ -155,75 +139,42 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
                 return feed.url || "Unknown feed";
               }
             })();
+          const isSelected = selectedFeed?.id === feed.id;
+          const tipText = `Subscribed: ${formatDate(feed.subscribed_at)}\nLast fetched: ${formatDate(feed.last_fetched_at)}`;
+          const hasUnread = feed.unread_count > 0;
           return (
             <li key={feed.id}>
-              <div className="flex items-center gap-0 group">
-                <div
-                  className="tooltip tooltip-bottom flex-1 min-w-0"
-                  data-tip={tooltipText}
-                >
-                  <a
-                    className={`flex items-center gap-2 w-full ${selectedFeedId === feed.id ? "active" : ""}`}
-                    onClick={() =>
-                      onSelectFeed(selectedFeedId === feed.id ? null : feed.id)
-                    }
-                  >
-                    <FontAwesomeIcon
-                      icon={faRss}
-                      className="shrink-0 opacity-60"
-                    />
-                    <span className="truncate flex-1">{label}</span>
-                    {taskId && (
-                      <VerificationIndicator
-                        feed={feed}
-                        taskId={taskId}
-                        onDone={() => removeVerification(feed.id)}
-                      />
-                    )}
-                    {feed.unread_count > 0 && (
-                      <span className="badge badge-primary badge-sm shrink-0">
-                        {feed.unread_count}
-                      </span>
-                    )}
-                  </a>
+              <a
+                className={`tooltip tooltip-right group flex items-center gap-2 ${isSelected ? "active" : ""}`}
+                data-tip={tipText}
+                onClick={() => onSelectFeed(isSelected ? null : feed)}
+              >
+                <FontAwesomeIcon
+                  icon={faRss}
+                  className={`shrink-0 ${hasUnread ? "text-primary" : "opacity-60"}`}
+                />
+                <div className="overflow-hidden max-w-[180px] min-w-0">
+                  <span className="whitespace-nowrap block group-hover:[animation:feed-scroll_2s_ease-in-out_0.4s_infinite_alternate]">
+                    {label}
+                  </span>
                 </div>
-                <button
-                  className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-60 shrink-0"
-                  title="Fetch history"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setHistoryFeed(feed);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faClockRotateLeft} />
-                </button>
-                <button
-                  className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-60 shrink-0 text-error"
-                  title="Unsubscribe"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!confirm(`Unsubscribe from "${label}"?`)) return;
-                    if (selectedFeedId === feed.id) onSelectFeed(null);
-                    removeVerification(feed.id);
-                    await unsubscribeFeed(feed.id);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              </div>
+                {taskId && (
+                  <VerificationIndicator
+                    feed={feed}
+                    taskId={taskId}
+                    onDone={() => removeVerification(feed.id)}
+                  />
+                )}
+                {hasUnread && (
+                  <span className="badge badge-primary badge-sm shrink-0">
+                    {feed.unread_count}
+                  </span>
+                )}
+              </a>
             </li>
           );
         })}
       </ul>
-
-      {historyFeed && (
-        <FetchHistoryModal
-          feed={historyFeed}
-          taskId={verifications[historyFeed.id] ?? null}
-          onClose={() => setHistoryFeed(null)}
-          onVerified={() => removeVerification(historyFeed.id)}
-        />
-      )}
     </div>
   );
 }

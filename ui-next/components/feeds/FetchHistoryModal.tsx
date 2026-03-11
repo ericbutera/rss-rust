@@ -1,20 +1,20 @@
 "use client";
 
 import {
-  faCircleCheck,
-  faTriangleExclamation,
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Pagination } from "@ericbutera/kaleido";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import {
   useFetchHistory,
+  useInvalidateFeeds,
   useTaskStatus,
   type FeedResponse,
   type FetchHistoryPage,
   type FetchHistoryResponse,
-} from "../../src/lib/queries";
+} from "@/lib/queries";
+import { Pagination } from "@ericbutera/kaleido";
+import {
+  faCircleCheck,
+  faTriangleExclamation,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useEffect, useRef, useState } from "react";
 
 interface FetchHistoryModalProps {
   feed: FeedResponse;
@@ -56,16 +56,16 @@ function VerificationStatus({
   taskId?: string | null;
   onVerified?: () => void;
 }) {
-  const queryClient = useQueryClient();
+  const invalidateFeeds = useInvalidateFeeds();
   const { data: rawData } = useTaskStatus(taskId ?? null);
   const taskStatus = rawData as { status?: string; error?: string } | undefined;
 
   useEffect(() => {
     if (taskStatus?.status === "completed") {
-      queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+      invalidateFeeds();
       onVerified?.();
     }
-  }, [taskStatus?.status, onVerified, queryClient]);
+  }, [taskStatus?.status, onVerified, invalidateFeeds]);
 
   if (feed.verified_at) {
     return (
