@@ -217,9 +217,18 @@ impl TaskProcessor for FeedFetcher {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let db = self.db.as_ref();
 
-        let active_feeds = feeds::Model::find_active(db).await?;
+        let all_active_feeds = feeds::Model::find_active(db).await?;
+        // Only fetch feeds that have been verified — unverified feeds haven't
+        // been confirmed as valid RSS/Atom sources yet.
+        let active_feeds: Vec<_> = all_active_feeds
+            .into_iter()
+            .filter(|f| f.verified_at.is_some())
+            .collect();
 
-        tracing::info!(count = active_feeds.len(), "checking feeds for due fetches");
+        tracing::info!(
+            count = active_feeds.len(),
+            "checking verified feeds for due fetches"
+        );
 
         let feed_ids: Vec<i32> = active_feeds.iter().map(|f| f.id).collect();
         let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids).await?;

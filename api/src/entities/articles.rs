@@ -93,24 +93,6 @@ impl Model {
         q.count(db).await
     }
 
-    /// Paginated list of articles for a feed, ordered newest-first.
-    /// Returns `(items, total_count)`.
-    pub async fn list_for_feed(
-        db: &impl ConnectionTrait,
-        feed_id: i32,
-        page: u64,
-        per_page: u64,
-    ) -> Result<(Vec<Self>, u64), DbErr> {
-        use sea_orm::{EntityTrait, PaginatorTrait, QueryFilter, QueryOrder};
-        let paginator = Entity::find()
-            .filter(Column::FeedId.eq(feed_id))
-            .order_by_desc(Column::CreatedAt)
-            .paginate(db, per_page);
-        let total = paginator.num_items().await?;
-        let items = paginator.fetch_page(page - 1).await?;
-        Ok((items, total))
-    }
-
     /// Inserts a new article row.
     pub async fn create(
         db: &impl ConnectionTrait,

@@ -99,8 +99,8 @@ export default function Viewer({ feedId }: ViewerProps) {
     markFeedRead({ params: { path: { id: feedId } } });
   }
 
-  const articles = data?.pages.flatMap((p) => p.items) ?? [];
-  const totalCount = data?.pages[0]?.total ?? 0;
+  const articles = data?.pages.flatMap((p) => p.data) ?? [];
+  const totalCount = data?.pages[0]?.metadata.total ?? 0;
 
   if (isLoading) {
     return (

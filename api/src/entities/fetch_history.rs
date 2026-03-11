@@ -96,21 +96,6 @@ impl Model {
             .collect())
     }
 
-    /// Returns the N most recent fetch history records for a feed.
-    pub async fn list_for_feed(
-        db: &impl ConnectionTrait,
-        feed_id: i32,
-        limit: u64,
-    ) -> Result<Vec<Self>, DbErr> {
-        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
-        Entity::find()
-            .filter(Column::FeedId.eq(feed_id))
-            .order_by_desc(Column::CreatedAt)
-            .limit(limit)
-            .all(db)
-            .await
-    }
-
     /// Inserts a fetch history record for the given feed.
     pub async fn record(
         db: &impl ConnectionTrait,

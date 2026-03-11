@@ -3,11 +3,12 @@ use crate::entities::{articles, feeds, fetch_history, user_feeds};
 use crate::storage::AppStorage;
 use auth::AdminUserContext;
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, post, put},
     Json, Router,
 };
-use sea_orm::{ActiveModelTrait, EntityTrait, QueryOrder, Set};
+use glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use utoipa::ToSchema;
@@ -36,6 +37,19 @@ pub struct AdminFeedResponse {
     pub enabled: bool,
 }
 
+/// List all feeds (admin view)
+#[utoipa::path(
+    get,
+    path = "/admin/feeds",
+    operation_id = "admin_list_feeds",
+    responses(
+        (status = 200, description = "List of all feeds", body = [AdminFeedResponse]),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden"),
+    ),
+    security(("Bearer" = [])),
+    tag = "admin"
+)]
 async fn list_feeds(
     _admin: AdminUserContext<AppStorage>,
     State(state): State<Arc<AppStorage>>,
@@ -147,11 +161,30 @@ async fn update_feed(
     }))
 }
 
+/// List fetch history for a feed (admin view)
+#[utoipa::path(
+    get,
+    path = "/admin/feeds/{id}/fetch-history",
+    operation_id = "admin_list_feed_fetch_history",
+    params(
+        ("id" = i32, Path, description = "Feed ID"),
+        PaginationParams,
+    ),
+    responses(
+        (status = 200, description = "Fetch history", body = glass::data::pagination::PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden"),
+        (status = 404, description = "Feed not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "admin"
+)]
 async fn list_feed_fetch_history(
     _admin: AdminUserContext<AppStorage>,
     State(state): State<Arc<AppStorage>>,
     Path(feed_id): Path<i32>,
-) -> Result<Json<Vec<crate::controllers::feeds::FetchHistoryResponse>>, AppError> {
+    Query(params): Query<PaginationParams>,
+) -> Result<Json<PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>>, AppError> {
     let db = &state.db;
     // Verify feed exists
     feeds::Entity::find_by_id(feed_id)
@@ -159,22 +192,14 @@ async fn list_feed_fetch_history(
         .await?
         .ok_or_else(|| AppError::not_found("Feed not found"))?;
 
-    let history = fetch_history::Model::list_for_feed(db, feed_id, 50).await?;
+    let paginated = fetch_history::Entity::find()
+        .filter(fetch_history::Column::FeedId.eq(feed_id))
+        .order_by_desc(fetch_history::Column::CreatedAt)
+        .fetch_paginated(db, &params)
+        .await?
+        .map(crate::controllers::feeds::FetchHistoryResponse::from_model);
 
-    let data = history
-        .into_iter()
-        .map(|h| crate::controllers::feeds::FetchHistoryResponse {
-            id: h.id,
-            feed_id: h.feed_id,
-            status_code: h.status_code,
-            error_message: h.error_message,
-            content_length: h.content_length,
-            article_count: h.article_count,
-            fetched_at: h.created_at,
-        })
-        .collect();
-
-    Ok(Json(data))
+    Ok(Json(paginated))
 }
 
 // ── Maintenance tasks ─────────────────────────────────────────────────────────

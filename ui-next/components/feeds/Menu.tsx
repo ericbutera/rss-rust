@@ -5,12 +5,14 @@ import {
   faLinkSlash,
   faPlus,
   faRss,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import {
   useCreateFeed,
   useFeeds,
+  useUnsubscribeFeed,
   type FeedResponse,
 } from "../../src/lib/queries";
 import { usePendingVerifications } from "../../src/lib/usePendingVerifications";
@@ -33,6 +35,7 @@ function formatDate(iso: string | null | undefined): string {
 export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
   const { data: feeds, isLoading } = useFeeds();
   const { mutateAsync: createFeed, isPending } = useCreateFeed();
+  const { mutateAsync: unsubscribeFeed } = useUnsubscribeFeed();
   const {
     verifications,
     add: addVerification,
@@ -141,7 +144,17 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
         )}
         {feeds.map((feed: FeedResponse) => {
           const tooltipText = `Subscribed: ${formatDate(feed.subscribed_at)}\nLast fetched: ${formatDate(feed.last_fetched_at)}`;
-          const taskId = verifications[feed.id];
+          const taskId = verifications[feed.id] ?? null;
+          // TODO: compute during initial feed add, not here. allow customization on UserFFeed
+          const label =
+            feed.name ??
+            (() => {
+              try {
+                return new URL(feed.url).hostname;
+              } catch {
+                return feed.url || "Unknown feed";
+              }
+            })();
           return (
             <li key={feed.id}>
               <div className="flex items-center gap-0 group">
@@ -159,9 +172,7 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
                       icon={faRss}
                       className="shrink-0 opacity-60"
                     />
-                    <span className="truncate flex-1">
-                      {feed.name ?? new URL(feed.url).hostname}
-                    </span>
+                    <span className="truncate flex-1">{label}</span>
                     {taskId && (
                       <VerificationIndicator
                         feed={feed}
@@ -186,6 +197,19 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
                 >
                   <FontAwesomeIcon icon={faClockRotateLeft} />
                 </button>
+                <button
+                  className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-60 shrink-0 text-error"
+                  title="Unsubscribe"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!confirm(`Unsubscribe from "${label}"?`)) return;
+                    if (selectedFeedId === feed.id) onSelectFeed(null);
+                    removeVerification(feed.id);
+                    await unsubscribeFeed(feed.id);
+                  }}
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
               </div>
             </li>
           );
@@ -194,9 +218,10 @@ export default function Menu({ selectedFeedId, onSelectFeed }: MenuProps) {
 
       {historyFeed && (
         <FetchHistoryModal
-          feedId={historyFeed.id}
-          feedName={historyFeed.name ?? new URL(historyFeed.url).hostname}
+          feed={historyFeed}
+          taskId={verifications[historyFeed.id] ?? null}
           onClose={() => setHistoryFeed(null)}
+          onVerified={() => removeVerification(historyFeed.id)}
         />
       )}
     </div>

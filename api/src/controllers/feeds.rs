@@ -5,9 +5,11 @@ use auth::UserContext;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Json, Router,
 };
+use glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -57,6 +59,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
     Router::new()
         .route("/feeds", get(list_feeds))
         .route("/feeds", post(create_feed))
+        .route("/feeds/:id", delete(unsubscribe_feed))
         .route("/feeds/:id/articles", get(list_articles))
         .route("/feeds/:id/read", put(mark_feed_read))
         .route("/feeds/:id/fetch-history", get(list_fetch_history))
@@ -126,7 +129,7 @@ pub struct FetchHistoryResponse {
 }
 
 impl FetchHistoryResponse {
-    fn from_model(m: fetch_history::Model) -> Self {
+    pub fn from_model(m: fetch_history::Model) -> Self {
         FetchHistoryResponse {
             id: m.id,
             feed_id: m.feed_id,
@@ -199,32 +202,6 @@ pub struct TaskStatusResponse {
     pub error: Option<String>,
     pub attempts: i32,
     pub max_attempts: i32,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct ArticlesQuery {
-    /// Page number (1-based)
-    #[serde(default = "default_page")]
-    pub page: u64,
-    /// Items per page (default 20, max 100)
-    #[serde(default = "default_per_page")]
-    pub per_page: u64,
-}
-
-fn default_page() -> u64 {
-    1
-}
-fn default_per_page() -> u64 {
-    20
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct ArticlesPage {
-    pub items: Vec<ArticleResponse>,
-    pub page: u64,
-    pub per_page: u64,
-    pub total: u64,
-    pub has_next: bool,
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
@@ -374,6 +351,31 @@ pub async fn create_feed(
     ))
 }
 
+/// Unsubscribe the current user from a feed
+#[utoipa::path(
+    delete,
+    path = "/feeds/{id}",
+    params(
+        ("id" = i32, Path, description = "Feed ID")
+    ),
+    responses(
+        (status = 204, description = "Unsubscribed"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn unsubscribe_feed(
+    State(state): State<Arc<AppStorage>>,
+    user_ctx: UserContext<AppStorage>,
+    Path(id): Path<i32>,
+) -> Result<StatusCode, AppError> {
+    let db = &state.db;
+    let user_id = user_ctx.user.id;
+    user_feeds::Model::delete(db, user_id, id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 /// Get the status of a background task (e.g. feed verification)
 #[utoipa::path(
     get,
@@ -417,11 +419,10 @@ pub async fn get_task_status(
     path = "/feeds/{id}/articles",
     params(
         ("id" = i32, Path, description = "Feed ID"),
-        ("page" = Option<u64>, Query, description = "Page number (1-based, default 1)"),
-        ("per_page" = Option<u64>, Query, description = "Items per page (default 20, max 100)"),
+        PaginationParams,
     ),
     responses(
-        (status = 200, description = "List feed articles", body = ArticlesPage),
+        (status = 200, description = "List feed articles", body = PaginatedResponse<ArticleResponse>),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Feed not found"),
     ),
@@ -432,8 +433,8 @@ pub async fn list_articles(
     State(state): State<Arc<AppStorage>>,
     user_ctx: UserContext<AppStorage>,
     Path(id): Path<i32>,
-    Query(q): Query<ArticlesQuery>,
-) -> Result<Json<ArticlesPage>, AppError> {
+    Query(params): Query<PaginationParams>,
+) -> Result<Json<PaginatedResponse<ArticleResponse>>, AppError> {
     let db = &state.db;
     let user_id = user_ctx.user.id;
 
@@ -445,29 +446,19 @@ pub async fn list_articles(
         return Err(AppError::not_found("Feed not found"));
     }
 
-    let per_page = q.per_page.min(100).max(1);
-    let page = q.page.max(1);
+    let paginated = articles::Entity::find()
+        .filter(articles::Column::FeedId.eq(id))
+        .order_by_desc(articles::Column::CreatedAt)
+        .fetch_paginated(db, &params)
+        .await?;
 
-    let (items, total) = articles::Model::list_for_feed(db, id, page, per_page).await?;
-    let has_next = page * per_page < total;
-
-    // Fetch read status for this page of articles
-    let article_ids: Vec<i32> = items.iter().map(|a| a.id).collect();
+    let article_ids: Vec<i32> = paginated.data.iter().map(|a| a.id).collect();
     let read_map = user_articles::Model::read_map_for_user(db, user_id, article_ids).await?;
 
-    Ok(Json(ArticlesPage {
-        items: items
-            .into_iter()
-            .map(|a| {
-                let read_at = read_map.get(&a.id).copied().flatten();
-                ArticleResponse::from_model(a, read_at)
-            })
-            .collect(),
-        page,
-        per_page,
-        total,
-        has_next,
-    }))
+    Ok(Json(paginated.map(|a| {
+        let read_at = read_map.get(&a.id).copied().flatten();
+        ArticleResponse::from_model(a, read_at)
+    })))
 }
 
 /// Mark all articles in a feed as read for the current user
@@ -554,15 +545,16 @@ pub async fn mark_article_read(
     }))
 }
 
-/// List fetch history for a feed (most recent 50 entries)
+/// List fetch history for a feed
 #[utoipa::path(
     get,
     path = "/feeds/{id}/fetch-history",
     params(
-        ("id" = i32, Path, description = "Feed ID")
+        ("id" = i32, Path, description = "Feed ID"),
+        PaginationParams,
     ),
     responses(
-        (status = 200, description = "Fetch history", body = [FetchHistoryResponse]),
+        (status = 200, description = "Fetch history", body = PaginatedResponse<FetchHistoryResponse>),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Feed not found or not subscribed"),
     ),
@@ -573,7 +565,8 @@ pub async fn list_fetch_history(
     State(state): State<Arc<AppStorage>>,
     user_ctx: UserContext<AppStorage>,
     Path(id): Path<i32>,
-) -> Result<Json<Vec<FetchHistoryResponse>>, AppError> {
+    Query(params): Query<PaginationParams>,
+) -> Result<Json<PaginatedResponse<FetchHistoryResponse>>, AppError> {
     let db = &state.db;
     let user_id = user_ctx.user.id;
 
@@ -582,12 +575,12 @@ pub async fn list_fetch_history(
         .await?
         .ok_or_else(|| AppError::not_found("Feed subscription not found"))?;
 
-    let history = fetch_history::Model::list_for_feed(db, id, 50).await?;
+    let paginated = fetch_history::Entity::find()
+        .filter(fetch_history::Column::FeedId.eq(id))
+        .order_by_desc(fetch_history::Column::CreatedAt)
+        .fetch_paginated(db, &params)
+        .await?
+        .map(FetchHistoryResponse::from_model);
 
-    Ok(Json(
-        history
-            .into_iter()
-            .map(FetchHistoryResponse::from_model)
-            .collect(),
-    ))
+    Ok(Json(paginated))
 }

@@ -122,6 +122,21 @@ impl Model {
         Ok(())
     }
 
+    /// Remove a user's subscription to a feed.
+    pub async fn delete(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        feed_id: i32,
+    ) -> Result<(), DbErr> {
+        use sea_orm::{EntityTrait, QueryFilter};
+        Entity::delete_many()
+            .filter(Column::UserId.eq(user_id))
+            .filter(Column::FeedId.eq(feed_id))
+            .exec(db)
+            .await?;
+        Ok(())
+    }
+
     /// Decrement `unread_count` by 1 (floor 0) for a specific user/feed subscription.
     /// Called after an individual article is marked read.
     pub async fn decrement_unread(

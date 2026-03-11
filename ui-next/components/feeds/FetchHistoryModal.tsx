@@ -1,15 +1,26 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  faCircleCheck,
+  faTriangleExclamation,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Pagination } from "@ericbutera/kaleido";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import {
   useFetchHistory,
+  useTaskStatus,
+  type FeedResponse,
+  type FetchHistoryPage,
   type FetchHistoryResponse,
 } from "../../src/lib/queries";
 
 interface FetchHistoryModalProps {
-  feedId: number;
-  feedName: string;
+  feed: FeedResponse;
+  taskId?: string | null;
   onClose: () => void;
+  onVerified?: () => void;
 }
 
 function statusBadge(code: number | null | undefined) {
@@ -36,17 +47,111 @@ function formatDate(iso: string): string {
   });
 }
 
+function VerificationStatus({
+  feed,
+  taskId,
+  onVerified,
+}: {
+  feed: FeedResponse;
+  taskId?: string | null;
+  onVerified?: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const { data: rawData } = useTaskStatus(taskId ?? null);
+  const taskStatus = rawData as { status?: string; error?: string } | undefined;
+
+  useEffect(() => {
+    if (taskStatus?.status === "completed") {
+      queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+      onVerified?.();
+    }
+  }, [taskStatus?.status, onVerified, queryClient]);
+
+  if (feed.verified_at) {
+    return (
+      <div className="alert alert-success py-2 text-sm mb-4">
+        <FontAwesomeIcon icon={faCircleCheck} />
+        <span>
+          Feed verified{" "}
+          <span className="opacity-70">{formatDate(feed.verified_at)}</span>
+        </span>
+      </div>
+    );
+  }
+
+  if (taskStatus?.status === "completed") {
+    return (
+      <div className="alert alert-success py-2 text-sm mb-4">
+        <FontAwesomeIcon icon={faCircleCheck} />
+        <span>Feed verified successfully</span>
+      </div>
+    );
+  }
+
+  if (taskStatus?.status === "failed") {
+    return (
+      <div className="alert alert-warning py-2 text-sm mb-4">
+        <FontAwesomeIcon icon={faTriangleExclamation} />
+        <div>
+          <p className="font-semibold">Verification failed</p>
+          {taskStatus.error && (
+            <p className="text-xs opacity-80 mt-0.5 break-all">
+              {taskStatus.error}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (taskId) {
+    // pending or processing — show spinner only when there's an active task
+    return (
+      <div className="alert py-2 text-sm mb-4">
+        <span className="loading loading-spinner loading-xs" />
+        <span>Verifying feed…</span>
+      </div>
+    );
+  }
+
+  // No task and not verified — likely an older feed or verification wasn't queued
+  return (
+    <div className="alert alert-warning py-2 text-sm mb-4">
+      <FontAwesomeIcon icon={faTriangleExclamation} />
+      <span>Feed has not been verified yet</span>
+    </div>
+  );
+}
+
 export default function FetchHistoryModal({
-  feedId,
-  feedName,
+  feed,
+  taskId,
   onClose,
+  onVerified,
 }: FetchHistoryModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const { data: history, isLoading } = useFetchHistory(feedId);
+  const [page, setPage] = useState(1);
+  const { data: rawData, isLoading } = useFetchHistory(feed.id, page);
+  const historyPage = rawData as FetchHistoryPage | undefined;
+  const history = historyPage?.data ?? [];
+  const metadata = historyPage?.metadata;
+  const total = metadata?.total ?? 0;
+  const perPage = metadata?.per_page ?? 20;
+  const totalPages = metadata?.total_pages ?? 1;
 
   useEffect(() => {
     dialogRef.current?.showModal();
   }, []);
+
+  const feedName =
+    feed.name ??
+    (() => {
+      try {
+        return new URL(feed.url).hostname;
+      } catch {
+        return feed.url;
+      }
+    })();
 
   return (
     <dialog ref={dialogRef} className="modal" onClose={onClose}>
@@ -55,6 +160,14 @@ export default function FetchHistoryModal({
           Fetch History —{" "}
           <span className="font-normal opacity-70">{feedName}</span>
         </h3>
+
+        {!feed.verified_at && (
+          <VerificationStatus
+            feed={feed}
+            taskId={taskId}
+            onVerified={onVerified}
+          />
+        )}
 
         {isLoading && (
           <div className="flex justify-center py-8">
@@ -111,6 +224,16 @@ export default function FetchHistoryModal({
               </tbody>
             </table>
           </div>
+        )}
+
+        {totalPages > 1 && (
+          <Pagination
+            page={page}
+            perPage={perPage}
+            total={total}
+            onPageChange={setPage}
+            className="mt-3"
+          />
         )}
 
         <div className="modal-action">

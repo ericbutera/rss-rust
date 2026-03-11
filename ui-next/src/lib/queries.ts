@@ -9,11 +9,14 @@ export const $api = createClient<paths>(fetchClient);
 // ── Type aliases ──────────────────────────────────────────────────────────────
 export type FeedResponse = components["schemas"]["FeedResponse"];
 export type ArticleResponse = components["schemas"]["ArticleResponse"];
-export type ArticlesPage = components["schemas"]["ArticlesPage"];
+export type ArticlesPage =
+  components["schemas"]["PaginatedResponse_ArticleResponse"];
 export type CreateFeedRequest = components["schemas"]["CreateFeedRequest"];
 export type CreateFeedResponse = components["schemas"]["CreateFeedResponse"];
 export type FetchHistoryResponse =
   components["schemas"]["FetchHistoryResponse"];
+export type FetchHistoryPage =
+  components["schemas"]["PaginatedResponse_FetchHistoryResponse"];
 export type AdminFeed = components["schemas"]["AdminFeedResponse"];
 export type AdminUpdateFeedRequest =
   components["schemas"]["AdminUpdateFeedRequest"];
@@ -37,8 +40,10 @@ export function useFeedArticles(feedId: number | null) {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return resp.json() as Promise<ArticlesPage>;
     },
-    getNextPageParam: (lastPage: ArticlesPage) =>
-      lastPage.has_next ? lastPage.page + 1 : undefined,
+    getNextPageParam: (lastPage: ArticlesPage) => {
+      const { page, total_pages } = lastPage.metadata;
+      return page < total_pages ? page + 1 : undefined;
+    },
   });
 }
 
@@ -73,6 +78,18 @@ export function useMarkFeedRead() {
   };
 }
 
+export function useUnsubscribeFeed() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("delete", "/feeds/{id}");
+  return {
+    ...mutation,
+    mutateAsync: async (feedId: number) => {
+      await mutation.mutateAsync({ params: { path: { id: feedId } } });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+    },
+  };
+}
+
 export function useMarkArticleRead() {
   const queryClient = useQueryClient();
   const mutation = $api.useMutation("put", "/articles/{id}/read");
@@ -95,11 +112,11 @@ export function useMarkArticleRead() {
   };
 }
 
-export function useFetchHistory(feedId: number | null) {
+export function useFetchHistory(feedId: number | null, page = 1) {
   return $api.useQuery(
     "get",
     "/feeds/{id}/fetch-history",
-    { params: { path: { id: feedId ?? 0 } } },
+    { params: { path: { id: feedId ?? 0 }, query: { page, per_page: 20 } } },
     { enabled: feedId !== null },
   );
 }
@@ -128,11 +145,11 @@ export function useAdminFeeds() {
   return { ...resp, data: (resp.data ?? []) as AdminFeed[] };
 }
 
-export function useAdminFeedHistory(feedId: number | null) {
+export function useAdminFeedHistory(feedId: number | null, page = 1) {
   return $api.useQuery(
     "get",
     "/admin/feeds/{id}/fetch-history",
-    { params: { path: { id: feedId ?? 0 } } },
+    { params: { path: { id: feedId ?? 0 }, query: { page, per_page: 20 } } },
     { enabled: feedId !== null },
   );
 }

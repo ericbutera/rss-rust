@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Pagination } from "@ericbutera/kaleido";
 import {
   useAdminFeedHistory,
   useAdminFeeds,
   useUpdateAdminFeed,
   type AdminFeed,
+  type FetchHistoryPage,
   type FetchHistoryResponse,
 } from "../../src/lib/queries";
 
@@ -56,11 +58,15 @@ function HistoryModal({
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useAdminFeedHistory(feed.id);
-
-  const history: FetchHistoryResponse[] =
-    (data as FetchHistoryResponse[] | undefined) ?? [];
+  const { data: rawData, isLoading } = useAdminFeedHistory(feed.id, page);
+  const historyPage = rawData as FetchHistoryPage | undefined;
+  const history: FetchHistoryResponse[] = historyPage?.data ?? [];
+  const metadata = historyPage?.metadata;
+  const total = metadata?.total ?? 0;
+  const perPage = metadata?.per_page ?? 20;
+  const totalPages = metadata?.total_pages ?? 1;
 
   useEffect(() => {
     dialogRef.current?.showModal();
@@ -113,6 +119,16 @@ function HistoryModal({
               </tbody>
             </table>
           </div>
+        )}
+
+        {totalPages > 1 && (
+          <Pagination
+            page={page}
+            perPage={perPage}
+            total={total}
+            onPageChange={setPage}
+            className="mt-3"
+          />
         )}
 
         <div className="modal-action">
