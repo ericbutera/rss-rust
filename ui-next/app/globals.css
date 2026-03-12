@@ -6,3 +6,107 @@ body {
   margin: 0;
   min-height: 100vh;
 }
+
+/* Article body — theme-aware rich-text renderer without a typography plugin */
+.article-body {
+  color: var(--color-base-content);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.article-body p {
+  margin-top: 0;
+  margin-bottom: 0.875em;
+}
+.article-body p:last-child {
+  margin-bottom: 0;
+}
+
+.article-body h1,
+.article-body h2,
+.article-body h3,
+.article-body h4,
+.article-body h5,
+.article-body h6 {
+  color: var(--color-base-content);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+.article-body h1 {
+  font-size: 1.25em;
+}
+.article-body h2 {
+  font-size: 1.125em;
+}
+.article-body h3 {
+  font-size: 1em;
+}
+
+.article-body a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.article-body a:hover {
+  opacity: 0.85;
+}
+
+.article-body ul,
+.article-body ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.875em;
+}
+.article-body ul {
+  list-style-type: disc;
+}
+.article-body ol {
+  list-style-type: decimal;
+}
+.article-body li {
+  margin-bottom: 0.25em;
+}
+
+.article-body blockquote {
+  border-left: 3px solid var(--color-base-300);
+  padding-left: 1em;
+  margin-left: 0;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.article-body pre,
+.article-body code {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+.article-body pre {
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  margin-bottom: 0.875em;
+}
+.article-body code {
+  padding: 0.1em 0.3em;
+}
+.article-body pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.article-body img {
+  max-width: 100%;
+  border-radius: 0.25rem;
+  height: auto;
+}
+
+.article-body strong {
+  font-weight: 600;
+  color: var(--color-base-content);
+}
+
+.article-body hr {
+  border-color: var(--color-base-300);
+  margin: 1em 0;
+}

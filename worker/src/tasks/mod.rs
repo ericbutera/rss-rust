@@ -38,6 +38,7 @@ pub async fn register_default_processors(
 ) -> Result<TaskWorker, WorkerError> {
     let fetcher = Arc::new(FeedFetcher::new(db.clone()));
     let verifier = Arc::new(FeedVerifier::new(db.clone()));
+    let single_fetcher = Arc::new(SingleFeedFetcher::new(db.clone()));
 
     // Spawn the cron scheduler so feed_fetcher tasks are enqueued on schedule
     let db_for_scheduler = (*db).clone();
@@ -55,5 +56,6 @@ pub async fn register_default_processors(
 
     Ok(worker
         .register_processor(fetcher)
-        .register_processor(verifier))
+        .register_processor(verifier)
+        .register_processor(single_fetcher))
 }

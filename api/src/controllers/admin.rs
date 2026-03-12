@@ -18,6 +18,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds", get(list_feeds))
         .route("/feeds/:id", put(update_feed))
         .route("/feeds/:id/fetch-history", get(list_feed_fetch_history))
+        .route("/feeds/:id/fetch-now", post(fetch_feed_now))
         .route("/tasks/fix-unread-drift", post(fix_unread_drift))
 }
 
@@ -32,6 +33,7 @@ pub struct AdminFeedResponse {
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub verified_at: Option<chrono::DateTime<chrono::Utc>>,
     pub last_fetched_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub next_fetch_at: Option<chrono::DateTime<chrono::Utc>>,
     pub article_count: u64,
     pub fetch_interval_minutes: i32,
     pub enabled: bool,
@@ -77,6 +79,8 @@ async fn list_feeds(
             updated_at: feed.updated_at,
             verified_at: feed.verified_at,
             last_fetched_at,
+            next_fetch_at: last_fetched_at
+                .map(|t| t + chrono::Duration::minutes(feed.fetch_interval_minutes as i64)),
             article_count,
             fetch_interval_minutes: feed.fetch_interval_minutes,
             enabled: feed.deactivated_at.is_none(),
@@ -155,6 +159,8 @@ async fn update_feed(
         updated_at: updated.updated_at,
         verified_at: updated.verified_at,
         last_fetched_at,
+        next_fetch_at: last_fetched_at
+            .map(|t| t + chrono::Duration::minutes(updated.fetch_interval_minutes as i64)),
         article_count,
         fetch_interval_minutes: updated.fetch_interval_minutes,
         enabled: updated.deactivated_at.is_none(),
@@ -203,6 +209,58 @@ async fn list_feed_fetch_history(
 }
 
 // ── Maintenance tasks ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FetchNowResponse {
+    pub message: String,
+    pub task_id: String,
+}
+
+/// Enqueue an immediate one-off fetch for a specific feed (admin only).
+#[utoipa::path(
+    post,
+    path = "/admin/feeds/{id}/fetch-now",
+    operation_id = "admin_fetch_feed_now",
+    params(
+        ("id" = i32, Path, description = "Feed ID")
+    ),
+    responses(
+        (status = 200, description = "Fetch task enqueued", body = FetchNowResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden"),
+        (status = 404, description = "Feed not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "admin"
+)]
+async fn fetch_feed_now(
+    _admin: AdminUserContext<AppStorage>,
+    State(state): State<Arc<AppStorage>>,
+    Path(feed_id): Path<i32>,
+) -> Result<Json<FetchNowResponse>, AppError> {
+    let db = &state.db;
+
+    // Verify feed exists before enqueueing
+    feeds::Entity::find_by_id(feed_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::not_found("Feed not found"))?;
+
+    let task = state
+        .tasks
+        .inner()
+        .enqueue(
+            "feed_fetch_single".to_string(),
+            serde_json::json!({ "feed_id": feed_id }),
+        )
+        .await
+        .map_err(|e| AppError::internal_error(format!("Failed to enqueue fetch task: {e}")))?;
+
+    Ok(Json(FetchNowResponse {
+        message: format!("Fetch task enqueued for feed {feed_id}"),
+        task_id: task.id,
+    }))
+}
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FixDriftResponse {

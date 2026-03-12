@@ -3,6 +3,7 @@
 import {
   useAdminFeedHistory,
   useAdminFeeds,
+  useAdminFetchNow,
   useUpdateAdminFeed,
   type AdminFeed,
   type FetchHistoryPage,
@@ -263,16 +264,42 @@ export default function AdminFeedsPanel() {
   const [historyFeed, setHistoryFeed] = useState<AdminFeed | null>(null);
   const [editFeed, setEditFeed] = useState<AdminFeed | null>(null);
   const [feedList, setFeedList] = useState<AdminFeed[]>([]);
+  const [fetchNowFeedId, setFetchNowFeedId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const { data: feeds = [], isLoading, isError } = useAdminFeeds();
+  const fetchNowMutation = useAdminFetchNow();
 
   useEffect(() => {
     setFeedList(feeds as AdminFeed[]);
   }, [feeds]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   function handleSaved(updated: AdminFeed) {
     setFeedList((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
     setEditFeed(updated);
+  }
+
+  async function handleFetchNow(feedId: number) {
+    setFetchNowFeedId(feedId);
+    try {
+      const result = await fetchNowMutation.mutateAsync({
+        params: { path: { id: feedId } },
+      });
+      setToast({ message: result.message, type: "success" });
+    } catch {
+      setToast({ message: "Failed to enqueue fetch task.", type: "error" });
+    } finally {
+      setFetchNowFeedId(null);
+    }
   }
 
   if (isLoading) {
@@ -307,6 +334,7 @@ export default function AdminFeedsPanel() {
               <th>Verified</th>
               <th>Created</th>
               <th>Last Fetched</th>
+              <th>Next Fetch</th>
               <th></th>
             </tr>
           </thead>
@@ -340,6 +368,7 @@ export default function AdminFeedsPanel() {
                 </td>
                 <td className="text-xs">{formatDate(feed.created_at)}</td>
                 <td className="text-xs">{formatDate(feed.last_fetched_at)}</td>
+                <td className="text-xs">{formatDate(feed.next_fetch_at)}</td>
                 <td>
                   <div className="flex gap-1">
                     <button
@@ -353,6 +382,17 @@ export default function AdminFeedsPanel() {
                       onClick={() => setHistoryFeed(feed)}
                     >
                       History
+                    </button>
+                    <button
+                      className="btn btn-xs btn-secondary"
+                      disabled={fetchNowFeedId === feed.id}
+                      onClick={() => handleFetchNow(feed.id)}
+                    >
+                      {fetchNowFeedId === feed.id ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : (
+                        "Fetch Now"
+                      )}
                     </button>
                   </div>
                 </td>
@@ -372,6 +412,17 @@ export default function AdminFeedsPanel() {
           onClose={() => setEditFeed(null)}
           onSaved={handleSaved}
         />
+      )}
+
+      {toast && (
+        <div className="toast toast-top toast-end z-50">
+          <div
+            role="alert"
+            className={`alert ${toast.type === "success" ? "alert-success" : "alert-error"}`}
+          >
+            <span>{toast.message}</span>
+          </div>
+        </div>
       )}
     </div>
   );

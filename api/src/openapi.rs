@@ -24,6 +24,7 @@ use utoipa::OpenApi;
         crate::controllers::feeds::create_feed,
         crate::controllers::feeds::unsubscribe_feed,
         crate::controllers::feeds::list_articles,
+        crate::controllers::feeds::get_article,
         crate::controllers::feeds::mark_feed_read,
         crate::controllers::feeds::mark_article_read,
         crate::controllers::feeds::get_task_status,
@@ -32,6 +33,7 @@ use utoipa::OpenApi;
         crate::controllers::admin::list_feeds,
         crate::controllers::admin::list_feed_fetch_history,
         crate::controllers::admin::update_feed,
+        crate::controllers::admin::fetch_feed_now,
     ),
     components(
         schemas(
@@ -59,6 +61,7 @@ use utoipa::OpenApi;
             crate::controllers::feeds::CreateFeedResponse,
             crate::controllers::feeds::TaskStatusResponse,
             crate::controllers::admin::FixDriftResponse,
+            crate::controllers::admin::FetchNowResponse,
             crate::controllers::admin::AdminFeedResponse,
             crate::controllers::admin::AdminUpdateFeedRequest,
         )

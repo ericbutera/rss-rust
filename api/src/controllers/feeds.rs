@@ -64,6 +64,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds/:id/read", put(mark_feed_read))
         .route("/feeds/:id/fetch-history", get(list_fetch_history))
         .route("/feeds/tasks/:task_id", get(get_task_status))
+        .route("/articles/:id", get(get_article))
         .route("/articles/:id/read", put(mark_article_read))
 }
 
@@ -491,6 +492,39 @@ pub async fn mark_feed_read(
     Ok(Json(MessageResponse {
         message: "Feed marked as read".to_string(),
     }))
+}
+
+/// Get a single article by ID
+#[utoipa::path(
+    get,
+    path = "/articles/{id}",
+    params(
+        ("id" = i32, Path, description = "Article ID")
+    ),
+    responses(
+        (status = 200, description = "Article", body = ArticleResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Article not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn get_article(
+    State(state): State<Arc<AppStorage>>,
+    user_ctx: UserContext<AppStorage>,
+    Path(id): Path<i32>,
+) -> Result<Json<ArticleResponse>, AppError> {
+    let db = &state.db;
+    let user_id = user_ctx.user.id;
+
+    let article = articles::Model::find_by_id(db, id)
+        .await?
+        .ok_or_else(|| AppError::not_found("Article not found"))?;
+
+    let read_map = user_articles::Model::read_map_for_user(db, user_id, vec![id]).await?;
+    let read_at = read_map.get(&id).copied().flatten();
+
+    Ok(Json(ArticleResponse::from_model(article, read_at)))
 }
 
 /// Mark an article as read for the current user

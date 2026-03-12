@@ -145,6 +145,19 @@ export function useAdminFeeds() {
   return { ...resp, data: (resp.data ?? []) as AdminFeed[] };
 }
 
+export function useAdminFetchNow() {
+  return $api.useMutation("post", "/admin/feeds/{id}/fetch-now");
+}
+
+export function useArticle(articleId: number | null) {
+  return $api.useQuery(
+    "get",
+    "/articles/{id}",
+    { params: { path: { id: articleId ?? 0 } } },
+    { enabled: articleId !== null },
+  );
+}
+
 export function useAdminFeedHistory(feedId: number | null, page = 1) {
   return $api.useQuery(
     "get",

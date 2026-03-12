@@ -4,1562 +4,1783 @@
  */
 
 export interface paths {
-    "/admin/feature-flags": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all feature flags */
-        get: operations["list_flags"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/admin/feature-flags": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/admin/feature-flags/{key}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Update a single feature flag */
-        post: operations["update_flag"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List all feature flags */
+    get: operations["list_flags"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/feature-flags/{key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/admin/feeds": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all feeds (admin view) */
-        get: operations["admin_list_feeds"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Update a single feature flag */
+    post: operations["update_flag"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/feeds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/admin/feeds/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update a feed's fetch interval and enabled/disabled state. */
-        put: operations["update_feed"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List all feeds (admin view) */
+    get: operations["admin_list_feeds"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/feeds/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/admin/feeds/{id}/fetch-history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List fetch history for a feed (admin view) */
-        get: operations["admin_list_feed_fetch_history"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    /** Update a feed's fetch interval and enabled/disabled state. */
+    put: operations["update_feed"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/feeds/{id}/fetch-history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/admin/tasks/fix-unread-drift": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Recalculate unread_count for all user_feed subscriptions from ground truth.
-         * @description This corrects drift that can accumulate when articles are viewed after a bulk
-         *     mark-all-read, causing spurious decrements that undercount genuinely new articles.
-         */
-        post: operations["fix_unread_drift"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List fetch history for a feed (admin view) */
+    get: operations["admin_list_feed_fetch_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/feeds/{id}/fetch-now": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/articles/{id}/read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Mark an article as read for the current user */
-        put: operations["mark_article_read"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Enqueue an immediate one-off fetch for a specific feed (admin only). */
+    post: operations["admin_fetch_feed_now"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/tasks/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/current": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["current"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["admin_list_tasks"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/tasks/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/forgot": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["forgot_password"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["admin_get_task"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/tasks/fix-unread-drift": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Recalculate unread_count for all user_feed subscriptions from ground truth.
+     * @description This corrects drift that can accumulate when articles are viewed after a bulk
+     *     mark-all-read, causing spurious decrements that undercount genuinely new articles.
+     */
+    post: operations["fix_unread_drift"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/articles/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["logout"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a single article by ID */
+    get: operations["get_article"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/articles/{id}/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["refresh"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    /** Mark an article as read for the current user */
+    put: operations["mark_article_read"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/current": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["register"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["current"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/forgot": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/resend-confirmation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["resend_confirmation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["forgot_password"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/reset": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["reset_password"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["login"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/verify/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["verify_email"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["logout"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/refresh": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feature-flags": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public endpoint returning all feature flags (safe subset) for clients. */
-        get: operations["public_flags"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["refresh"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feeds": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List the current user's subscribed feeds */
-        get: operations["list_feeds"];
-        put?: never;
-        /** Subscribe to a feed by URL (creates the feed if it doesn't exist yet) */
-        post: operations["create_feed"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["register"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/resend-confirmation": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feeds/tasks/{task_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get the status of a background task (e.g. feed verification) */
-        get: operations["get_task_status"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["resend_confirmation"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/reset": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feeds/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Unsubscribe the current user from a feed */
-        delete: operations["unsubscribe_feed"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post: operations["reset_password"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/verify/{token}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feeds/{id}/articles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List articles for a feed */
-        get: operations["list_articles"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get: operations["verify_email"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feature-flags": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feeds/{id}/fetch-history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List fetch history for a feed */
-        get: operations["list_fetch_history"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Public endpoint returning all feature flags (safe subset) for clients. */
+    get: operations["public_flags"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feeds": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/feeds/{id}/read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Mark all articles in a feed as read for the current user */
-        put: operations["mark_feed_read"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List the current user's subscribed feeds */
+    get: operations["list_feeds"];
+    put?: never;
+    /** Subscribe to a feed by URL (creates the feed if it doesn't exist yet) */
+    post: operations["create_feed"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feeds/tasks/{task_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/oauth/{provider}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Initiate provider OAuth flow - redirect user to provider login */
-        get: operations["oauth_authorize"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get the status of a background task (e.g. feed verification) */
+    get: operations["get_task_status"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feeds/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/oauth/{provider}/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Handle OAuth callback for generic provider */
-        get: operations["oauth_callback"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Unsubscribe the current user from a feed */
+    delete: operations["unsubscribe_feed"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feeds/{id}/articles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    /** List articles for a feed */
+    get: operations["list_articles"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feeds/{id}/fetch-history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List fetch history for a feed */
+    get: operations["list_fetch_history"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feeds/{id}/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Mark all articles in a feed as read for the current user */
+    put: operations["mark_feed_read"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/oauth/{provider}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Initiate provider OAuth flow - redirect user to provider login */
+    get: operations["oauth_authorize"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/oauth/{provider}/callback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Handle OAuth callback for generic provider */
+    get: operations["oauth_callback"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        AdminFeedResponse: {
-            /** Format: int64 */
-            article_count: number;
-            /** Format: date-time */
-            created_at: string;
-            enabled: boolean;
-            /** Format: int32 */
-            fetch_interval_minutes: number;
-            /** Format: int32 */
-            id: number;
-            /** Format: date-time */
-            last_fetched_at?: string | null;
-            name?: string | null;
-            /** Format: date-time */
-            updated_at: string;
-            url: string;
-            /** Format: date-time */
-            verified_at?: string | null;
-        };
-        AdminUpdateFeedRequest: {
-            enabled?: boolean | null;
-            /** Format: int32 */
-            fetch_interval_minutes?: number | null;
-        };
-        ArticleResponse: {
-            content?: string | null;
-            /** Format: date-time */
-            created_at: string;
-            description?: string | null;
-            /** Format: int32 */
-            feed_id: number;
-            guid?: string | null;
-            /** Format: int32 */
-            id: number;
-            image_url?: string | null;
-            preview?: string | null;
-            /**
-             * Format: date-time
-             * @description When the current user read this article (None = unread)
-             */
-            read_at?: string | null;
-            title?: string | null;
-            /** Format: date-time */
-            updated_at: string;
-            url: string;
-        };
-        CreateFeedRequest: {
-            name?: string | null;
-            url: string;
-        };
-        /** @description Response returned when a new feed subscription is created. */
-        CreateFeedResponse: {
-            feed: components["schemas"]["FeedResponse"];
-            /**
-             * @description Background task ID for the feed verification job.
-             *     Poll `GET /feeds/tasks/{task_id}` to track verification progress.
-             *     `None` when subscribing to an already-verified feed.
-             */
-            task_id?: string | null;
-        };
-        FeatureFlagResponse: {
-            description?: string | null;
-            enabled: boolean;
-            feature_key: string;
-        };
-        FeedResponse: {
-            /** Format: date-time */
-            created_at: string;
-            /** Format: int32 */
-            id: number;
-            /**
-             * Format: date-time
-             * @description When the feed was last fetched by the worker
-             */
-            last_fetched_at?: string | null;
-            /**
-             * Format: date-time
-             * @description When the user last marked all articles in this feed as read
-             */
-            last_read_at?: string | null;
-            name?: string | null;
-            /**
-             * Format: date-time
-             * @description When the current user subscribed to this feed
-             */
-            subscribed_at: string;
-            /**
-             * Format: int64
-             * @description Number of unread articles (articles created after last_read_at, or all if never read)
-             */
-            unread_count: number;
-            /** Format: date-time */
-            updated_at: string;
-            url: string;
-            /** Format: date-time */
-            verified_at?: string | null;
-        };
-        FetchHistoryResponse: {
-            /** Format: int32 */
-            article_count?: number | null;
-            /** Format: int64 */
-            content_length?: number | null;
-            error_message?: string | null;
-            /** Format: int32 */
-            feed_id: number;
-            /** Format: date-time */
-            fetched_at: string;
-            /** Format: int32 */
-            id: number;
-            /** Format: int32 */
-            status_code?: number | null;
-        };
-        FixDriftResponse: {
-            message: string;
-            /**
-             * Format: int64
-             * @description Number of user_feed rows whose unread_count was recalculated
-             */
-            rows_updated: number;
-        };
-        ForgotPasswordRequest: {
-            email: string;
-        };
-        LoginRequest: {
-            email: string;
-            password: string;
-        };
-        MessageResponse: {
-            message: string;
-        };
-        /** @description Standard paginated response wrapper */
-        PaginatedResponse_ArticleResponse: {
-            /** @description Recordset */
-            data: {
-                content?: string | null;
-                /** Format: date-time */
-                created_at: string;
-                description?: string | null;
-                /** Format: int32 */
-                feed_id: number;
-                guid?: string | null;
-                /** Format: int32 */
-                id: number;
-                image_url?: string | null;
-                preview?: string | null;
-                /**
-                 * Format: date-time
-                 * @description When the current user read this article (None = unread)
-                 */
-                read_at?: string | null;
-                title?: string | null;
-                /** Format: date-time */
-                updated_at: string;
-                url: string;
-            }[];
-            /** @description Pagination metadata */
-            metadata: components["schemas"]["PaginationMetadata"];
-        };
-        /** @description Standard paginated response wrapper */
-        PaginatedResponse_FeatureFlagResponse: {
-            /** @description Recordset */
-            data: {
-                description?: string | null;
-                enabled: boolean;
-                feature_key: string;
-            }[];
-            /** @description Pagination metadata */
-            metadata: components["schemas"]["PaginationMetadata"];
-        };
-        /** @description Standard paginated response wrapper */
-        PaginatedResponse_FetchHistoryResponse: {
-            /** @description Recordset */
-            data: {
-                /** Format: int32 */
-                article_count?: number | null;
-                /** Format: int64 */
-                content_length?: number | null;
-                error_message?: string | null;
-                /** Format: int32 */
-                feed_id: number;
-                /** Format: date-time */
-                fetched_at: string;
-                /** Format: int32 */
-                id: number;
-                /** Format: int32 */
-                status_code?: number | null;
-            }[];
-            /** @description Pagination metadata */
-            metadata: components["schemas"]["PaginationMetadata"];
-        };
-        /** @description Standard paginated response wrapper */
-        PaginatedResponse_PublicFlagResponse: {
-            /** @description Recordset */
-            data: {
-                enabled: boolean;
-                feature_key: string;
-            }[];
-            /** @description Pagination metadata */
-            metadata: components["schemas"]["PaginationMetadata"];
-        };
-        /** @description Metadata about the pagination state */
-        PaginationMetadata: {
-            /**
-             * Format: int64
-             * @description Current page number
-             */
-            page: number;
-            /**
-             * Format: int64
-             * @description Number of items per page
-             */
-            per_page: number;
-            /**
-             * Format: int64
-             * @description Total number of items available
-             */
-            total: number;
-            /**
-             * Format: int64
-             * @description Total number of pages available
-             */
-            total_pages: number;
-        };
-        /** @description Standard pagination query parameters */
-        PaginationParams: {
-            /**
-             * Format: int64
-             * @description Page number (1-based)
-             */
-            page?: number;
-            /**
-             * Format: int64
-             * @description Number of items per page
-             */
-            per_page?: number;
-        };
-        PublicFlagResponse: {
-            enabled: boolean;
-            feature_key: string;
-        };
-        RegisterRequest: {
-            email: string;
-            name: string;
-            password: string;
-        };
-        RegisterResponse: {
-            pid: string;
-        };
-        ResendConfirmationRequest: {
-            email: string;
-        };
-        ResetPasswordRequest: {
-            password: string;
-            token: string;
-        };
-        /** @description Status of a background task (e.g. feed verification). */
-        TaskStatusResponse: {
-            /** Format: int32 */
-            attempts: number;
-            error?: string | null;
-            id: string;
-            /** Format: int32 */
-            max_attempts: number;
-            /** @description One of: pending, processing, completed, failed */
-            status: string;
-        };
-        UpdateFlagRequest: {
-            enabled: boolean;
-        };
-        UserResponse: {
-            email: string;
-            is_admin: boolean;
-            name: string;
-            pid: string;
-            verified: boolean;
-        };
+  schemas: {
+    AdminFeedResponse: {
+      /** Format: int64 */
+      article_count: number;
+      /** Format: date-time */
+      created_at: string;
+      enabled: boolean;
+      /** Format: int32 */
+      fetch_interval_minutes: number;
+      /** Format: int32 */
+      id: number;
+      /** Format: date-time */
+      last_fetched_at?: string | null;
+      /** Format: date-time */
+      next_fetch_at?: string | null;
+      name?: string | null;
+      /** Format: date-time */
+      updated_at: string;
+      url: string;
+      /** Format: date-time */
+      verified_at?: string | null;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    AdminUpdateFeedRequest: {
+      enabled?: boolean | null;
+      /** Format: int32 */
+      fetch_interval_minutes?: number | null;
+    };
+    AdminTaskResponse: {
+      /** Format: int32 */
+      id: number;
+      task_type: string;
+      status: string;
+      /** Format: int32 */
+      attempts: number;
+      /** Format: int32 */
+      max_attempts: number;
+      error?: string | null;
+      result?: string | null;
+      created_at: string;
+      updated_at: string;
+      scheduled_for?: string | null;
+      started_at?: string | null;
+      completed_at?: string | null;
+    };
+    AdminTaskListResponse: {
+      data: components["schemas"]["AdminTaskResponse"][];
+      total: number;
+      page: number;
+      per_page: number;
+      total_pages: number;
+    };
+    ArticleResponse: {
+      content?: string | null;
+      /** Format: date-time */
+      created_at: string;
+      description?: string | null;
+      /** Format: int32 */
+      feed_id: number;
+      guid?: string | null;
+      /** Format: int32 */
+      id: number;
+      image_url?: string | null;
+      preview?: string | null;
+      /**
+       * Format: date-time
+       * @description When the current user read this article (None = unread)
+       */
+      read_at?: string | null;
+      title?: string | null;
+      /** Format: date-time */
+      updated_at: string;
+      url: string;
+    };
+    CreateFeedRequest: {
+      name?: string | null;
+      url: string;
+    };
+    /** @description Response returned when a new feed subscription is created. */
+    CreateFeedResponse: {
+      feed: components["schemas"]["FeedResponse"];
+      /**
+       * @description Background task ID for the feed verification job.
+       *     Poll `GET /feeds/tasks/{task_id}` to track verification progress.
+       *     `None` when subscribing to an already-verified feed.
+       */
+      task_id?: string | null;
+    };
+    FeatureFlagResponse: {
+      description?: string | null;
+      enabled: boolean;
+      feature_key: string;
+    };
+    FeedResponse: {
+      /** Format: date-time */
+      created_at: string;
+      /** Format: int32 */
+      id: number;
+      /**
+       * Format: date-time
+       * @description When the feed was last fetched by the worker
+       */
+      last_fetched_at?: string | null;
+      /**
+       * Format: date-time
+       * @description When the user last marked all articles in this feed as read
+       */
+      last_read_at?: string | null;
+      name?: string | null;
+      /**
+       * Format: date-time
+       * @description When the current user subscribed to this feed
+       */
+      subscribed_at: string;
+      /**
+       * Format: int64
+       * @description Number of unread articles (articles created after last_read_at, or all if never read)
+       */
+      unread_count: number;
+      /** Format: date-time */
+      updated_at: string;
+      url: string;
+      /** Format: date-time */
+      verified_at?: string | null;
+    };
+    FetchHistoryResponse: {
+      /** Format: int32 */
+      article_count?: number | null;
+      /** Format: int64 */
+      content_length?: number | null;
+      error_message?: string | null;
+      /** Format: int32 */
+      feed_id: number;
+      /** Format: date-time */
+      fetched_at: string;
+      /** Format: int32 */
+      id: number;
+      /** Format: int32 */
+      status_code?: number | null;
+    };
+    FixDriftResponse: {
+      message: string;
+      /**
+       * Format: int64
+       * @description Number of user_feed rows whose unread_count was recalculated
+       */
+      rows_updated: number;
+    };
+    FetchNowResponse: {
+      message: string;
+      task_id: string;
+    };
+    ForgotPasswordRequest: {
+      email: string;
+    };
+    LoginRequest: {
+      email: string;
+      password: string;
+    };
+    MessageResponse: {
+      message: string;
+    };
+    /** @description Standard paginated response wrapper */
+    PaginatedResponse_ArticleResponse: {
+      /** @description Recordset */
+      data: {
+        content?: string | null;
+        /** Format: date-time */
+        created_at: string;
+        description?: string | null;
+        /** Format: int32 */
+        feed_id: number;
+        guid?: string | null;
+        /** Format: int32 */
+        id: number;
+        image_url?: string | null;
+        preview?: string | null;
+        /**
+         * Format: date-time
+         * @description When the current user read this article (None = unread)
+         */
+        read_at?: string | null;
+        title?: string | null;
+        /** Format: date-time */
+        updated_at: string;
+        url: string;
+      }[];
+      /** @description Pagination metadata */
+      metadata: components["schemas"]["PaginationMetadata"];
+    };
+    /** @description Standard paginated response wrapper */
+    PaginatedResponse_FeatureFlagResponse: {
+      /** @description Recordset */
+      data: {
+        description?: string | null;
+        enabled: boolean;
+        feature_key: string;
+      }[];
+      /** @description Pagination metadata */
+      metadata: components["schemas"]["PaginationMetadata"];
+    };
+    /** @description Standard paginated response wrapper */
+    PaginatedResponse_FetchHistoryResponse: {
+      /** @description Recordset */
+      data: {
+        /** Format: int32 */
+        article_count?: number | null;
+        /** Format: int64 */
+        content_length?: number | null;
+        error_message?: string | null;
+        /** Format: int32 */
+        feed_id: number;
+        /** Format: date-time */
+        fetched_at: string;
+        /** Format: int32 */
+        id: number;
+        /** Format: int32 */
+        status_code?: number | null;
+      }[];
+      /** @description Pagination metadata */
+      metadata: components["schemas"]["PaginationMetadata"];
+    };
+    /** @description Standard paginated response wrapper */
+    PaginatedResponse_PublicFlagResponse: {
+      /** @description Recordset */
+      data: {
+        enabled: boolean;
+        feature_key: string;
+      }[];
+      /** @description Pagination metadata */
+      metadata: components["schemas"]["PaginationMetadata"];
+    };
+    /** @description Metadata about the pagination state */
+    PaginationMetadata: {
+      /**
+       * Format: int64
+       * @description Current page number
+       */
+      page: number;
+      /**
+       * Format: int64
+       * @description Number of items per page
+       */
+      per_page: number;
+      /**
+       * Format: int64
+       * @description Total number of items available
+       */
+      total: number;
+      /**
+       * Format: int64
+       * @description Total number of pages available
+       */
+      total_pages: number;
+    };
+    /** @description Standard pagination query parameters */
+    PaginationParams: {
+      /**
+       * Format: int64
+       * @description Page number (1-based)
+       */
+      page?: number;
+      /**
+       * Format: int64
+       * @description Number of items per page
+       */
+      per_page?: number;
+    };
+    PublicFlagResponse: {
+      enabled: boolean;
+      feature_key: string;
+    };
+    RegisterRequest: {
+      email: string;
+      name: string;
+      password: string;
+    };
+    RegisterResponse: {
+      pid: string;
+    };
+    ResendConfirmationRequest: {
+      email: string;
+    };
+    ResetPasswordRequest: {
+      password: string;
+      token: string;
+    };
+    /** @description Status of a background task (e.g. feed verification). */
+    TaskStatusResponse: {
+      /** Format: int32 */
+      attempts: number;
+      error?: string | null;
+      id: string;
+      /** Format: int32 */
+      max_attempts: number;
+      /** @description One of: pending, processing, completed, failed */
+      status: string;
+    };
+    UpdateFlagRequest: {
+      enabled: boolean;
+    };
+    UserResponse: {
+      email: string;
+      is_admin: boolean;
+      name: string;
+      pid: string;
+      verified: boolean;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list_flags: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of feature flags */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedResponse_FeatureFlagResponse"];
-                };
-            };
-        };
+  admin_list_tasks: {
+    parameters: {
+      query?: {
+        task_type?: string;
+        status?: string;
+        page?: number;
+        per_page?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    update_flag: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Feature flag key */
-                key: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: { [name: string]: unknown };
+        content: {
+          "application/json": components["schemas"]["AdminTaskListResponse"];
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateFlagRequest"];
-            };
-        };
-        responses: {
-            /** @description Flag updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FeatureFlagResponse"];
-                };
-            };
-        };
+      };
+      401: { headers: { [name: string]: unknown }; content?: never };
+      403: { headers: { [name: string]: unknown }; content?: never };
     };
-    admin_list_feeds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of all feeds */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminFeedResponse"][];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  admin_get_task: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: { id: number };
+      cookie?: never;
     };
-    update_feed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: { [name: string]: unknown };
+        content: {
+          "application/json": components["schemas"]["AdminTaskResponse"];
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminUpdateFeedRequest"];
-            };
-        };
-        responses: {
-            /** @description Feed updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminFeedResponse"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Feed not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
+      401: { headers: { [name: string]: unknown }; content?: never };
+      403: { headers: { [name: string]: unknown }; content?: never };
+      404: { headers: { [name: string]: unknown }; content?: never };
     };
-    admin_list_feed_fetch_history: {
-        parameters: {
-            query?: {
-                /** @description Page number (1-based) */
-                page?: number;
-                /** @description Number of items per page */
-                per_page?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Feed ID */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Fetch history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedResponse_FetchHistoryResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Feed not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  list_flags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    fix_unread_drift: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description List of feature flags */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Drift corrected */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FixDriftResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["PaginatedResponse_FeatureFlagResponse"];
         };
+      };
     };
-    mark_article_read: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Article ID */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Article marked as read */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Article not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  update_flag: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Feature flag key */
+        key: string;
+      };
+      cookie?: never;
     };
-    current: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Current user info */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateFlagRequest"];
+      };
     };
-    forgot_password: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Flag updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ForgotPasswordRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["FeatureFlagResponse"];
         };
-        responses: {
-            /** @description Password reset email sent if user exists */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    login: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Login successful */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid credentials */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Too many login attempts */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  admin_list_feeds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    logout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description List of all feeds */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Logout successful */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not authenticated */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["AdminFeedResponse"][];
         };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    refresh: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Optional refresh token in body or cookie */
-        requestBody: {
-            content: {
-                "application/json": string;
-            };
-        };
-        responses: {
-            /** @description Token refreshed successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid refresh token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  update_feed: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
     };
-    register: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterRequest"];
-            };
-        };
-        responses: {
-            /** @description User registered successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegisterResponse"];
-                };
-            };
-            /** @description Validation error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminUpdateFeedRequest"];
+      };
     };
-    resend_confirmation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Feed updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResendConfirmationRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["AdminFeedResponse"];
         };
-        responses: {
-            /** @description Confirmation email sent */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Validation error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    reset_password: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResetPasswordRequest"];
-            };
-        };
-        responses: {
-            /** @description Password reset successful */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid or expired token */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  admin_list_feed_fetch_history: {
+    parameters: {
+      query?: {
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Number of items per page */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
     };
-    verify_email: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Email verification token */
-                token: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Fetch history */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Email verified successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Invalid or expired token */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["PaginatedResponse_FetchHistoryResponse"];
         };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    public_flags: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of feature flags */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedResponse_PublicFlagResponse"];
-                };
-            };
-        };
+  };
+  admin_fetch_feed_now: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
     };
-    list_feeds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Fetch task enqueued */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List user feeds */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FeedResponse"][];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["FetchNowResponse"];
         };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    create_feed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateFeedRequest"];
-            };
-        };
-        responses: {
-            /** @description Subscribed to feed */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreateFeedResponse"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  fix_unread_drift: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    get_task_status: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Background task ID */
-                task_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Drift corrected */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Task status */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaskStatusResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Task not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["FixDriftResponse"];
         };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    unsubscribe_feed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Feed ID */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Unsubscribed */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  get_article: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Article ID */
+        id: number;
+      };
+      cookie?: never;
     };
-    list_articles: {
-        parameters: {
-            query?: {
-                /** @description Page number (1-based) */
-                page?: number;
-                /** @description Number of items per page */
-                per_page?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Feed ID */
-                id: number;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Article */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description List feed articles */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedResponse_ArticleResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Feed not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["ArticleResponse"];
         };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Article not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    list_fetch_history: {
-        parameters: {
-            query?: {
-                /** @description Page number (1-based) */
-                page?: number;
-                /** @description Number of items per page */
-                per_page?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Feed ID */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Fetch history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedResponse_FetchHistoryResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Feed not found or not subscribed */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  mark_article_read: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Article ID */
+        id: number;
+      };
+      cookie?: never;
     };
-    mark_feed_read: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Feed ID */
-                id: number;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Article marked as read */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Feed marked as read */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Subscription not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
         };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Article not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    oauth_authorize: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description OAuth provider name */
-                provider: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Redirect to provider */
-            302: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  current: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    oauth_callback: {
-        parameters: {
-            query: {
-                code: string;
-                state?: string | null;
-            };
-            header?: never;
-            path: {
-                /** @description OAuth provider name */
-                provider: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Current user info */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Redirect to frontend */
-            302: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
         };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
+  };
+  forgot_password: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ForgotPasswordRequest"];
+      };
+    };
+    responses: {
+      /** @description Password reset email sent if user exists */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Validation error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  login: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LoginRequest"];
+      };
+    };
+    responses: {
+      /** @description Login successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid credentials */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Too many login attempts */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  logout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Logout successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  refresh: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Optional refresh token in body or cookie */
+    requestBody: {
+      content: {
+        "application/json": string;
+      };
+    };
+    responses: {
+      /** @description Token refreshed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid refresh token */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  register: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterRequest"];
+      };
+    };
+    responses: {
+      /** @description User registered successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RegisterResponse"];
+        };
+      };
+      /** @description Validation error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  resend_confirmation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResendConfirmationRequest"];
+      };
+    };
+    responses: {
+      /** @description Confirmation email sent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Validation error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  reset_password: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResetPasswordRequest"];
+      };
+    };
+    responses: {
+      /** @description Password reset successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid or expired token */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  verify_email: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Email verification token */
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Email verified successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Invalid or expired token */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  public_flags: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of feature flags */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedResponse_PublicFlagResponse"];
+        };
+      };
+    };
+  };
+  list_feeds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List user feeds */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedResponse"][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  create_feed: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateFeedRequest"];
+      };
+    };
+    responses: {
+      /** @description Subscribed to feed */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreateFeedResponse"];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  get_task_status: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Background task ID */
+        task_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Task status */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TaskStatusResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Task not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  unsubscribe_feed: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Unsubscribed */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  list_articles: {
+    parameters: {
+      query?: {
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Number of items per page */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List feed articles */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedResponse_ArticleResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  list_fetch_history: {
+    parameters: {
+      query?: {
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Number of items per page */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Fetch history */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedResponse_FetchHistoryResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found or not subscribed */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  mark_feed_read: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Feed marked as read */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Subscription not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  oauth_authorize: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description OAuth provider name */
+        provider: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Redirect to provider */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  oauth_callback: {
+    parameters: {
+      query: {
+        code: string;
+        state?: string | null;
+      };
+      header?: never;
+      path: {
+        /** @description OAuth provider name */
+        provider: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Redirect to frontend */
+      302: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
 }
