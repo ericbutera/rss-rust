@@ -249,6 +249,33 @@ impl FeedFetchService {
             tracing::warn!(feed_id, "failed to record fetch history: {e}");
         }
     }
+
+    /// Parse and persist a feed using bytes that were already downloaded (e.g.
+    /// during verification), skipping a redundant HTTP request.
+    pub(crate) async fn process_feed_with_bytes(
+        &self,
+        feed_id: i32,
+        status: i32,
+        etag: Option<&str>,
+        bytes: &[u8],
+    ) -> anyhow::Result<i32> {
+        let parsed = parse_rss(bytes)?;
+        let mut count = 0i32;
+        for entry in parsed.entries {
+            if self.persist_entry(feed_id, entry).await? {
+                count += 1;
+            }
+        }
+        let result = FeedFetchResult {
+            status,
+            etag: etag.map(|s| s.to_string()),
+            content_length: Some(bytes.len() as i64),
+            error_message: None,
+            bytes: None,
+        };
+        self.record_history(feed_id, &result, count).await;
+        Ok(count)
+    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

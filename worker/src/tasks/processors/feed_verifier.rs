@@ -3,6 +3,7 @@ use api::entities::feeds;
 use async_trait::async_trait;
 use background_jobs::worker::TaskProcessor;
 use feed_rs::parser;
+use reqwest::header::ETAG;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use serde_json::Value;
@@ -75,6 +76,13 @@ impl TaskProcessor for FeedVerifier {
             return Err(format!("Feed URL returned HTTP {status}").into());
         }
 
+        let status = resp.status().as_u16() as i32;
+        let etag = resp
+            .headers()
+            .get(ETAG)
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
+
         let bytes = resp
             .bytes()
             .await
@@ -88,6 +96,22 @@ impl TaskProcessor for FeedVerifier {
             .context("Failed to mark feed as verified")?;
 
         tracing::info!(feed_id = p.feed_id, "feed verified successfully");
+
+        // Immediately parse and persist the articles we just downloaded so users
+        // don't have to wait for the next hourly fetch cycle.
+        let service = crate::feed_fetcher::FeedFetchService::new(self.db.clone());
+        match service
+            .process_feed_with_bytes(p.feed_id, status, etag.as_deref(), bytes.as_ref())
+            .await
+        {
+            Ok(n) => tracing::info!(
+                feed_id = p.feed_id,
+                articles = n,
+                "initial feed fetch complete"
+            ),
+            Err(e) => tracing::warn!(feed_id = p.feed_id, "initial feed fetch failed: {e}"),
+        }
+
         Ok(())
     }
 }
