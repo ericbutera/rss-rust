@@ -43,7 +43,7 @@ impl TaskProcessor for EmailNotification {
         &self,
         task_id: i32,
         payload: serde_json::Value,
-    ) -> Result<Option<String>, Box<dyn Error + Send + Sync>> {
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
         let data = payload.get("data").unwrap_or(&payload);
         let task: EmailNotificationTask = serde_json::from_value(data.clone())?;
 
@@ -66,6 +66,6 @@ impl TaskProcessor for EmailNotification {
             )
             .await?;
 
-        Ok(None)
+        Ok(())
     }
 }

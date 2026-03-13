@@ -41,7 +41,7 @@ impl TaskProcessor for SingleFeedFetcher {
         &self,
         _task_id: i32,
         payload: Value,
-    ) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let p: Payload =
             serde_json::from_value(payload).context("Invalid feed_fetch_single payload")?;
 
@@ -58,9 +58,6 @@ impl TaskProcessor for SingleFeedFetcher {
             .await
             .with_context(|| format!("Failed to fetch feed {}", feed.id))?;
 
-        Ok(Some(format!(
-            "Fetched feed {}: {} new articles",
-            feed.id, new_articles
-        )))
+        Ok(())
     }
 }

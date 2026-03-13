@@ -1,0 +1,180 @@
+when:
+  - event: push
+    branch: main
+    path:
+      - api/**
+      - worker/**
+      - migration/**
+      - Cargo.toml
+      - Cargo.lock
+      - ui-next/**
+      - .woodpecker/main.yaml
+  - event: manual
+
+steps:
+  # env must exist at build time since Next.js bakes NEXT_PUBLIC_* at build
+  - name: create-ui-env
+    image: alpine:latest
+    when:
+      - path:
+          - ui-next/**
+          - .woodpecker/main.yaml
+        event: push
+        branch: main
+      - event: manual
+    commands:
+      - sh ui-next/create-env.sh
+
+  - name: build-api
+    image: woodpeckerci/plugin-kaniko
+    when:
+      - path:
+          - api/**
+          - migration/**
+          - Cargo.toml
+          - Cargo.lock
+          - .woodpecker/main.yaml
+        event: push
+        branch: main
+      - event: manual
+    settings:
+      registry: registry.container-registry:5000
+      repo: rss-api
+      tags: ${CI_COMMIT_SHA},latest
+      insecure: true
+      skip_tls_verify: true
+      insecure-pull: true
+      insecure-registry: true
+      context: .
+      dockerfile: api/Dockerfile
+      cache: true
+      cache_repo: rss-api-cache
+
+  - name: build-worker
+    image: woodpeckerci/plugin-kaniko
+    when:
+      - path:
+          - api/**
+          - worker/**
+          - migration/**
+          - Cargo.toml
+          - Cargo.lock
+          - .woodpecker/main.yaml
+        event: push
+        branch: main
+      - event: manual
+    settings:
+      registry: registry.container-registry:5000
+      repo: rss-worker
+      tags: ${CI_COMMIT_SHA},latest
+      insecure: true
+      skip_tls_verify: true
+      insecure-pull: true
+      insecure-registry: true
+      context: .
+      dockerfile: worker/Dockerfile
+      cache: true
+      cache_repo: rss-worker-cache
+
+  - name: build-ui
+    image: woodpeckerci/plugin-kaniko
+    depends_on: [create-ui-env]
+    when:
+      - path:
+          - ui-next/**
+          - .woodpecker/main.yaml
+        event: push
+        branch: main
+      - event: manual
+    settings:
+      registry: registry.container-registry:5000
+      repo: rss-ui
+      tags: ${CI_COMMIT_SHA},latest
+      insecure: true
+      skip_tls_verify: true
+      insecure-pull: true
+      insecure-registry: true
+      context: ui-next
+      dockerfile: ui-next/Dockerfile
+
+  # Deploy steps are chained sequentially via depends_on to prevent concurrent
+  # Pulumi updates (which cause 409 conflicts). Each step only runs when its
+  # service's paths changed. Skipped steps still satisfy depends_on in Woodpecker.
+  - name: deploy-api
+    image: pulumi/pulumi-go:latest
+    depends_on: [build-api]
+    when:
+      - path:
+          - api/**
+          - migration/**
+          - Cargo.toml
+          - Cargo.lock
+          - .woodpecker/main.yaml
+        event: push
+        branch: main
+      - event: manual
+    environment:
+      PULUMI_ACCESS_TOKEN:
+        from_secret: PULUMI_ACCESS_TOKEN
+      GITHUB_TOKEN:
+        from_secret: GITHUB_TOKEN
+      PULUMI_IAC_REPO:
+        from_secret: PULUMI_IAC_REPO
+    commands:
+      - git clone https://x-access-token:$GITHUB_TOKEN@github.com/$PULUMI_IAC_REPO /tmp/pulumi-iac
+      - cd /tmp/pulumi-iac/rss
+      - pulumi stack select ericbutera/rss/rss --non-interactive
+      - pulumi config set rss:apiTag ${CI_COMMIT_SHA}
+      - pulumi up --yes --skip-preview
+
+  - name: deploy-worker
+    image: pulumi/pulumi-go:latest
+    depends_on: [build-worker, deploy-api]
+    when:
+      - path:
+          - api/**
+          - worker/**
+          - migration/**
+          - Cargo.toml
+          - Cargo.lock
+          - .woodpecker/main.yaml
+        event: push
+        branch: main
+      - event: manual
+    environment:
+      PULUMI_ACCESS_TOKEN:
+        from_secret: PULUMI_ACCESS_TOKEN
+      GITHUB_TOKEN:
+        from_secret: GITHUB_TOKEN
+      PULUMI_IAC_REPO:
+        from_secret: PULUMI_IAC_REPO
+    commands:
+      - git clone https://x-access-token:$GITHUB_TOKEN@github.com/$PULUMI_IAC_REPO /tmp/pulumi-iac
+      - cd /tmp/pulumi-iac/rss
+      - pulumi stack select ericbutera/rss/rss --non-interactive
+      - pulumi config set rss:workerTag ${CI_COMMIT_SHA}
+      - pulumi up --yes --skip-preview
+
+  - name: deploy-ui
+    image: pulumi/pulumi-go:latest
+    depends_on: [build-ui, deploy-worker]
+    when:
+      - path:
+          - ui-next/**
+          - .woodpecker/main.yaml
+        event: push
+        branch: main
+      - event: manual
+    environment:
+      PULUMI_ACCESS_TOKEN:
+        from_secret: PULUMI_ACCESS_TOKEN
+      GITHUB_TOKEN:
+        from_secret: GITHUB_TOKEN
+      PULUMI_IAC_REPO:
+        from_secret: PULUMI_IAC_REPO
+    commands:
+      - git clone https://x-access-token:$GITHUB_TOKEN@github.com/$PULUMI_IAC_REPO /tmp/pulumi-iac
+      - cd /tmp/pulumi-iac/rss
+      - pulumi stack select ericbutera/rss/rss --non-interactive
+      - pulumi config set rss:uiTag ${CI_COMMIT_SHA}
+      - pulumi up --yes --skip-preview

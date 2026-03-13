@@ -46,7 +46,7 @@ impl TaskProcessor for FeedVerifier {
         &self,
         _task_id: i32,
         payload: Value,
-    ) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let p: Payload =
             serde_json::from_value(payload).context("Invalid feed_verifier payload")?;
         let db = self.db.as_ref();
@@ -58,7 +58,7 @@ impl TaskProcessor for FeedVerifier {
 
         if feed.verified_at.is_some() {
             tracing::debug!(feed_id = p.feed_id, "feed already verified, skipping");
-            return Ok(None);
+            return Ok(());
         }
 
         tracing::info!(feed_id = p.feed_id, url = %feed.url, "verifying feed");
@@ -88,6 +88,6 @@ impl TaskProcessor for FeedVerifier {
             .context("Failed to mark feed as verified")?;
 
         tracing::info!(feed_id = p.feed_id, "feed verified successfully");
-        Ok(Some(format!("Feed {} verified successfully", p.feed_id)))
+        Ok(())
     }
 }

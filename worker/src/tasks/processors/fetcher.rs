@@ -40,7 +40,7 @@ impl TaskProcessor for FeedFetcher {
         &self,
         _task_id: i32,
         _payload: Value,
-    ) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let db = self.db.as_ref();
 
         let active_feeds = feeds::Model::find_active(db).await?;
@@ -86,12 +86,6 @@ impl TaskProcessor for FeedFetcher {
             "feed fetch run complete"
         );
 
-        Ok(Some(format!(
-            "Checked {} feeds ({} due): {} new articles, {} errors",
-            active_feeds.len(),
-            due_count,
-            new_articles,
-            error_count,
-        )))
+        Ok(())
     }
 }
