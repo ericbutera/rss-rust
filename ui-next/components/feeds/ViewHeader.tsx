@@ -23,16 +23,8 @@ export default function ViewHeader({
   onUnsubscribe,
 }: NavProps) {
   return (
-    <div className="sticky top-0 z-20 bg-base-100 border-b border-base-300 px-4 py-2 flex items-center gap-3 min-w-0">
-      <FontAwesomeIcon icon={faRss} className="opacity-50 shrink-0" />
-      <span className="font-semibold truncate flex-1 min-w-0">
-        {feed.name ?? feed.url}
-      </span>
-      {feed.unread_count > 0 && (
-        <span className="badge badge-primary badge-sm shrink-0">
-          {feed.unread_count}
-        </span>
-      )}
+    <div className="navbar">
+      <span className="truncate flex-1 min-w-0">{feed.name ?? feed.url}</span>
       <ul className="menu menu-horizontal bg-base-200 rounded-box p-1 shrink-0">
         <li>
           <a

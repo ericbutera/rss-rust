@@ -88,7 +88,7 @@ export default function ArticleList({
           <div
             key={article.id}
             className={`collapse collapse-arrow border border-base-300 ${
-              isRead && !isOpen ? "bg-base-200 opacity-60" : "bg-base-100"
+              isRead && !isOpen ? "bg-base-200" : "bg-base-100"
             }`}
           >
             <input
@@ -97,8 +97,12 @@ export default function ArticleList({
               onChange={() => toggleArticle(article)}
             />
             <div
-              className={`collapse-title font-medium ${
-                isRead && !isOpen ? "text-base-content/50" : "text-base-content"
+              className={`collapse-title ${
+                isOpen
+                  ? "font-semibold text-primary"
+                  : isRead
+                    ? "text-base-content/40"
+                    : "text-base-content"
               }`}
             >
               <span className="flex items-center gap-2">

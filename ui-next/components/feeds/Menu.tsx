@@ -91,10 +91,10 @@ export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
             onChange={(e) => setNewName(e.target.value)}
           />
           {error && <p className="text-error text-xs">{error}</p>}
-          <div className="flex gap-1">
+          <div className="flex gap-1 justify-end">
             <button
               type="submit"
-              className="btn btn-primary btn-sm flex-1"
+              className="btn btn-primary btn-sm"
               disabled={isPending}
             >
               {isPending ? "Adding…" : "Add"}
@@ -140,13 +140,11 @@ export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
               }
             })();
           const isSelected = selectedFeed?.id === feed.id;
-          const tipText = `Subscribed: ${formatDate(feed.subscribed_at)}\nLast fetched: ${formatDate(feed.last_fetched_at)}`;
           const hasUnread = feed.unread_count > 0;
           return (
             <li key={feed.id}>
               <a
                 className={`tooltip tooltip-right group flex items-center gap-2 ${isSelected ? "active" : ""}`}
-                data-tip={tipText}
                 onClick={() => onSelectFeed(isSelected ? null : feed)}
               >
                 <FontAwesomeIcon
@@ -167,7 +165,7 @@ export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
                 )}
                 {hasUnread && (
                   <span className="badge badge-primary badge-sm shrink-0">
-                    {feed.unread_count}
+                    {feed.unread_count > 99 ? "99+" : feed.unread_count}
                   </span>
                 )}
               </a>

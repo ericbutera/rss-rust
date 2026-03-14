@@ -119,7 +119,7 @@ export default function Viewer({
       />
 
       {/* Article content */}
-      <div className="p-4 flex flex-col gap-2 flex-1">
+      <div className="flex flex-col flex-1">
         {isLoading && (
           <div className="flex justify-center py-16">
             <span className="loading loading-spinner loading-lg" />

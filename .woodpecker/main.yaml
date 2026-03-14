@@ -72,19 +72,33 @@ steps:
         from_secret: PULUMI_IAC_REPO
     commands:
       - |
-        CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
         MANUAL="${CI_PIPELINE_EVENT}"
+        # CI_COMMIT_BEFORE is the branch tip before this push — covers all commits in the push.
+        # Fetch it so it's available in the shallow clone. If it's the zero SHA (first push /
+        # force-push with no prior history), fall back to deploying everything.
+        BEFORE="${CI_COMMIT_BEFORE}"
+        CHANGED=""
+        FALLBACK_DEPLOY_ALL=false
+        if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+          git fetch --depth=1 origin "$BEFORE" 2>/dev/null || true
+          CHANGED=$(git diff --name-only "$BEFORE" "${CI_COMMIT_SHA}" 2>/dev/null || true)
+          if [ -z "$CHANGED" ]; then
+            FALLBACK_DEPLOY_ALL=true
+          fi
+        else
+          FALLBACK_DEPLOY_ALL=true
+        fi
         API_TAG=""
         WORKER_TAG=""
         UI_TAG=""
 
-        if [ "$MANUAL" = "manual" ] || echo "$CHANGED" | grep -qE "^(api/|migration/|Cargo\.toml|Cargo\.lock|\.woodpecker/)"; then
+        if [ "$MANUAL" = "manual" ] || [ "$FALLBACK_DEPLOY_ALL" = "true" ] || echo "$CHANGED" | grep -qE "^(api/|migration/|Cargo\.toml|Cargo\.lock|\.woodpecker/)"; then
           API_TAG="${CI_COMMIT_SHA}"
         fi
-        if [ "$MANUAL" = "manual" ] || echo "$CHANGED" | grep -qE "^(api/|worker/|migration/|Cargo\.toml|Cargo\.lock|\.woodpecker/)"; then
+        if [ "$MANUAL" = "manual" ] || [ "$FALLBACK_DEPLOY_ALL" = "true" ] || echo "$CHANGED" | grep -qE "^(api/|worker/|migration/|Cargo\.toml|Cargo\.lock|\.woodpecker/)"; then
           WORKER_TAG="${CI_COMMIT_SHA}"
         fi
-        if [ "$MANUAL" = "manual" ] || echo "$CHANGED" | grep -qE "^(ui-next/|\.woodpecker/)"; then
+        if [ "$MANUAL" = "manual" ] || [ "$FALLBACK_DEPLOY_ALL" = "true" ] || echo "$CHANGED" | grep -qE "^(ui-next/|\.woodpecker/)"; then
           UI_TAG="${CI_COMMIT_SHA}"
         fi
 
