@@ -4,7 +4,7 @@ import type { FeedResponse } from "@/lib/queries";
 import {
   faCircleCheck,
   faClockRotateLeft,
-  faRss,
+  faGear,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -23,37 +23,52 @@ export default function ViewHeader({
   onUnsubscribe,
 }: NavProps) {
   return (
-    <div className="navbar">
-      <span className="truncate flex-1 min-w-0">{feed.name ?? feed.url}</span>
-      <ul className="menu menu-horizontal bg-base-200 rounded-box p-1 shrink-0">
-        <li>
-          <a
-            className="tooltip tooltip-bottom"
-            data-tip="Fetch history"
-            onClick={onShowHistory}
-          >
-            <FontAwesomeIcon icon={faClockRotateLeft} />
-          </a>
-        </li>
-        <li>
-          <a
-            className="tooltip tooltip-bottom"
-            data-tip="Mark all read"
+    <div className="navbar bg-base-100 px-4">
+      {/* Left side: Title/Name */}
+      <div className="flex-1 min-w-0">
+        <span className="truncate">{feed.name ?? feed.url}</span>
+      </div>
+
+      {/* Right side: Actions */}
+      <div className="flex-none flex items-center gap-1">
+        {/* Mark All Read Button */}
+        <div className="tooltip tooltip-bottom" data-tip="Mark all read">
+          <button
+            className="btn btn-ghost btn-sm btn-circle"
             onClick={onMarkAllRead}
           >
             <FontAwesomeIcon icon={faCircleCheck} />
-          </a>
-        </li>
-        <li>
-          <a
-            className="tooltip tooltip-bottom text-error"
-            data-tip="Unsubscribe"
-            onClick={onUnsubscribe}
+          </button>
+        </div>
+
+        {/* Settings Dropdown */}
+        <div className="dropdown dropdown-end">
+          <div
+            tabIndex={0}
+            role="button"
+            className="btn btn-ghost btn-sm btn-circle"
           >
-            <FontAwesomeIcon icon={faTrash} />
-          </a>
-        </li>
-      </ul>
+            <FontAwesomeIcon icon={faGear} />
+          </div>
+          <ul
+            tabIndex={0}
+            className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52 z-[1] mt-2"
+          >
+            <li>
+              <button onClick={onShowHistory}>
+                <FontAwesomeIcon icon={faClockRotateLeft} />
+                Fetch History
+              </button>
+            </li>
+            <li>
+              <button onClick={onUnsubscribe} className="text-error">
+                <FontAwesomeIcon icon={faTrash} />
+                Unsubscribe
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
