@@ -1,7 +1,7 @@
 "use client";
 
 import RssMetricsSection from "@/components/admin/RssMetricsSection";
-import { useAdminAggregates } from "@/lib/queries";
+import { useAdminAppMetrics, useAdminMetrics } from "@/lib/queries";
 import { admin } from "@ericbutera/kaleido";
 import { Suspense } from "react";
 import AuthRouter from "../../../components/AuthRouter";
@@ -19,14 +19,15 @@ export default function AdminMetricsPage() {
 }
 
 function MetricsContent() {
-  const { data, isLoading } = useAdminAggregates();
+  const { data: sysData, isLoading: sysLoading } = useAdminMetrics();
+  const { data: appData, isLoading: appLoading } = useAdminAppMetrics();
 
-  if (isLoading) return <div className="p-6">Loading...</div>;
+  if (sysLoading || appLoading) return <div className="p-6">Loading...</div>;
 
   return (
     <>
-      <admin.AuthMetricsSection data={data} />
-      <RssMetricsSection data={data} />
+      <admin.KaleidoMetricsSection data={sysData} />
+      <RssMetricsSection stats={appData} />
     </>
   );
 }

@@ -2,18 +2,60 @@ import type { NextConfig } from "next";
 import fs from "node:fs";
 import path from "node:path";
 
+// When pointing Turbopack/webpack at the raw kaleido source, that source
+// resolves its own imports (react, react-query, etc.) from kaleido's
+// node_modules, producing a second instance of those singletons.
+// Force them all to the app's copies so there's only one instance.
+
+// Turbopack: project-relative paths (must not start with ../)
+const singletonAliasesTurbopack = {
+  react: "./node_modules/react",
+  "react-dom": "./node_modules/react-dom",
+  "@tanstack/react-query": "./node_modules/@tanstack/react-query",
+  "react-router-dom": "./node_modules/react-router-dom",
+};
+
+// Webpack: absolute paths
+const singletonAliasesWebpack = (appRoot: string) => ({
+  react: path.join(appRoot, "node_modules/react"),
+  "react-dom": path.join(appRoot, "node_modules/react-dom"),
+  "@tanstack/react-query": path.join(
+    appRoot,
+    "node_modules/@tanstack/react-query",
+  ),
+  "react-router-dom": path.join(appRoot, "node_modules/react-router-dom"),
+});
+
+const kaleidoSrcRelative = "kaleido/typescript/packages/kaleido/src/index.ts";
+
+// In Docker, kaleido is mounted inside the project at /app/kaleido.
+// Locally, it lives two directories up at ../../kaleido.
+const dockerKaleidoEntry = path.join(__dirname, kaleidoSrcRelative);
 const localKaleidoEntry = path.resolve(
   __dirname,
   "../../kaleido/typescript/packages/kaleido/src/index.ts",
 );
 
-const localKaleidoEntryForTurbopack = path
-  .relative(__dirname, localKaleidoEntry)
-  .split(path.sep)
-  .join("/");
+const kaleidoEntry = fs.existsSync(dockerKaleidoEntry)
+  ? dockerKaleidoEntry
+  : fs.existsSync(localKaleidoEntry)
+    ? localKaleidoEntry
+    : null;
 
 const useLocalKaleido =
-  process.env.NODE_ENV !== "production" && fs.existsSync(localKaleidoEntry);
+  process.env.NODE_ENV !== "production" && kaleidoEntry !== null;
+
+// Turbopack resolveAlias only supports paths within the project root —
+// absolute paths and ../ relative paths are not supported.
+// When kaleido is mounted inside /app (Docker), the relative path stays
+// within the project. On macOS local dev it would be ../../ so we skip it
+// (webpack alias still works for non-turbopack dev).
+const turbopackAlias = (() => {
+  if (!kaleidoEntry) return null;
+  const rel = path.relative(__dirname, kaleidoEntry).split(path.sep).join("/");
+  if (rel.startsWith("../")) return null;
+  return `./${rel}`;
+})();
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -22,17 +64,20 @@ const nextConfig: NextConfig = {
     externalDir: true,
   },
   turbopack: {
-    resolveAlias: useLocalKaleido
-      ? {
-          "@ericbutera/kaleido": localKaleidoEntryForTurbopack,
-        }
-      : undefined,
+    resolveAlias:
+      useLocalKaleido && turbopackAlias
+        ? {
+            "@ericbutera/kaleido": turbopackAlias,
+            ...singletonAliasesTurbopack,
+          }
+        : undefined,
   },
   webpack: (config) => {
-    if (useLocalKaleido) {
+    if (useLocalKaleido && kaleidoEntry) {
       config.resolve.alias = {
         ...(config.resolve.alias ?? {}),
-        "@ericbutera/kaleido": localKaleidoEntry,
+        "@ericbutera/kaleido": kaleidoEntry,
+        ...singletonAliasesWebpack(__dirname),
       };
     }
     return config;

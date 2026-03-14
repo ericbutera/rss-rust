@@ -20,6 +20,7 @@ use utoipa::OpenApi;
         glass_openapi::paths::public_flags,
         glass_openapi::paths::list_flags,
         glass_openapi::paths::update_flag,
+        glass_openapi::paths::get_metrics,
         crate::controllers::feeds::list_feeds,
         crate::controllers::feeds::create_feed,
         crate::controllers::feeds::unsubscribe_feed,
@@ -34,6 +35,7 @@ use utoipa::OpenApi;
         crate::controllers::admin::list_feed_fetch_history,
         crate::controllers::admin::update_feed,
         crate::controllers::admin::fetch_feed_now,
+        crate::controllers::admin::app_metrics,
     ),
     components(
         schemas(
@@ -50,6 +52,7 @@ use utoipa::OpenApi;
             glass_openapi::schemas::UpdateFlagRequest,
             glass_openapi::schemas::PaginatedResponse<glass_openapi::schemas::FeatureFlagResponse>,
             glass_openapi::schemas::PaginatedResponse<glass_openapi::schemas::PublicFlagResponse>,
+            glass_openapi::schemas::SystemMetrics,
             glass::data::pagination::PaginationParams,
             glass::data::pagination::PaginatedResponse<crate::controllers::feeds::ArticleResponse>,
             glass::data::pagination::PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>,
@@ -64,6 +67,7 @@ use utoipa::OpenApi;
             crate::controllers::admin::FetchNowResponse,
             crate::controllers::admin::AdminFeedResponse,
             crate::controllers::admin::AdminUpdateFeedRequest,
+            glass::aggregator::NamedStat,
         )
     ),
     tags(

@@ -7,6 +7,7 @@ use axum::{
     routing::{get, post, put},
     Json, Router,
 };
+use glass::aggregator::{Aggregator, NamedStat};
 use glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
@@ -15,11 +16,79 @@ use utoipa::ToSchema;
 
 pub fn routes() -> Router<Arc<AppStorage>> {
     Router::new()
+        .route("/metrics/app", get(app_metrics))
         .route("/feeds", get(list_feeds))
         .route("/feeds/:id", put(update_feed))
         .route("/feeds/:id/fetch-history", get(list_feed_fetch_history))
         .route("/feeds/:id/fetch-now", post(fetch_feed_now))
         .route("/tasks/fix-unread-drift", post(fix_unread_drift))
+}
+
+/// Get RSS-specific app metrics.
+#[utoipa::path(
+    get,
+    path = "/admin/metrics/app",
+    operation_id = "admin_app_metrics",
+    responses(
+        (status = 200, description = "RSS app metrics", body = [NamedStat]),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden"),
+    ),
+    security(("Bearer" = [])),
+    tag = "admin"
+)]
+async fn app_metrics(
+    _admin: AdminUserContext<AppStorage>,
+    State(state): State<Arc<AppStorage>>,
+) -> Result<Json<Vec<NamedStat>>, AppError> {
+    Ok(Json(rss_metrics(&state.db).await))
+}
+
+async fn rss_metrics(db: &sea_orm::DatabaseConnection) -> Vec<NamedStat> {
+    let f_fetches =
+        Aggregator::recent_count::<fetch_history::Entity>(db, fetch_history::Column::CreatedAt, 30);
+    let f_articles =
+        Aggregator::recent_count::<articles::Entity>(db, articles::Column::CreatedAt, 30);
+    let f_content_size = Aggregator::recent_sum::<fetch_history::Entity>(
+        db,
+        fetch_history::Column::CreatedAt,
+        fetch_history::Column::ContentLength,
+        30,
+    );
+    let f_parse_errors = Aggregator::recent_count_not_null::<fetch_history::Entity>(
+        db,
+        fetch_history::Column::CreatedAt,
+        fetch_history::Column::ErrorMessage,
+        30,
+    );
+    let (fetches, articles, content_size, parse_errors) =
+        tokio::join!(f_fetches, f_articles, f_content_size, f_parse_errors);
+    vec![
+        NamedStat::new(
+            "feeds_fetched_last_30d",
+            "Feeds Fetched (30d)",
+            "last 30 days",
+            fetches,
+        ),
+        NamedStat::new(
+            "articles_added_last_30d",
+            "Articles Added (30d)",
+            "last 30 days",
+            articles,
+        ),
+        NamedStat::new(
+            "content_size_last_30d",
+            "Content Size (30d)",
+            "last 30 days",
+            content_size,
+        ),
+        NamedStat::new(
+            "parse_errors_last_30d",
+            "Parse Errors (30d)",
+            "last 30 days",
+            parse_errors,
+        ),
+    ]
 }
 
 // ── Feeds ─────────────────────────────────────────────────────────────────────

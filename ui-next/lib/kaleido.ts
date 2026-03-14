@@ -16,4 +16,5 @@ kaleido.configure({
 });
 
 export const authApiClient = kaleido.createAuthApiClient();
+export const useAuth = kaleido.useAuth;
 export default kaleido;

@@ -21,6 +21,11 @@ export type AdminFeed = components["schemas"]["AdminFeedResponse"];
 export type AdminUpdateFeedRequest =
   components["schemas"]["AdminUpdateFeedRequest"];
 export type TaskStatusResponse = components["schemas"]["TaskStatusResponse"];
+export type AdminAggregatesResponse =
+  components["schemas"]["AdminAggregatesResponse"];
+export type SystemMetrics = components["schemas"]["SystemMetrics"];
+export type NamedStat = components["schemas"]["NamedStat"];
+export type StatResult = components["schemas"]["StatResult"];
 
 // ── Feed queries ──────────────────────────────────────────────────────────────
 
@@ -169,6 +174,14 @@ export function useAdminFeedHistory(feedId: number | null, page = 1) {
 
 export function useUpdateAdminFeed() {
   return $api.useMutation("put", "/admin/feeds/{id}");
+}
+
+export function useAdminMetrics() {
+  return $api.useQuery("get", "/admin/metrics", {});
+}
+
+export function useAdminAppMetrics() {
+  return $api.useQuery("get", "/admin/metrics/app", {});
 }
 
 // ── Invalidation helpers ──────────────────────────────────────────────────────

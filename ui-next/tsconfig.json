@@ -19,7 +19,10 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@ericbutera/kaleido": [
+        "../../kaleido/typescript/packages/kaleido/src/index.ts"
+      ]
     }
   },
   "include": [

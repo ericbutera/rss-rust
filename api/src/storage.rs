@@ -5,6 +5,7 @@ use auth::controllers::oauth::OAuthRouteStorage;
 use auth::{AuthRouteStorage, AuthStorage};
 use background_jobs::admin::BackgroundTasksStorage;
 use glass::feature_flags::{FeatureFlagService, FeatureFlagStorage};
+use glass::metrics_controller::MetricsStorage;
 use migration::MigratorTrait;
 use sea_orm::DatabaseConnection;
 
@@ -97,5 +98,11 @@ impl OAuthRouteStorage for AppStorage {
 
     fn oauth_enabled(&self) -> bool {
         false
+    }
+}
+
+impl MetricsStorage for AppStorage {
+    fn db(&self) -> &DatabaseConnection {
+        &self.db
     }
 }
