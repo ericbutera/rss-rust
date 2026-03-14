@@ -8,7 +8,9 @@ export default function AdminUsersPage() {
   return (
     <Suspense>
       <AuthRouter>
-        <admin.Users />
+        <admin.Layout title="Users">
+          <admin.Users />
+        </admin.Layout>
       </AuthRouter>
     </Suspense>
   );
