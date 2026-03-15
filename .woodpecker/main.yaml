@@ -4,16 +4,8 @@ when:
   - event: manual
 
 steps:
-  # No path conditions on any step — Woodpecker excludes path-conditional steps
-  # from the DAG entirely, which breaks depends_on chains. Kaniko's --cache
-  # makes rebuilds of unchanged services fast.
-  # build-api and build-worker start immediately (no deps).
-  # create-ui-env runs in parallel with them; build-ui waits on it.
-  - name: create-ui-env
-    image: alpine:latest
-    commands:
-      - sh ui-next/create-env.sh
-
+  # Builds are serialized (api → worker → ui) to avoid concurrent Kaniko
+  # processes exhausting server RAM. Kaniko --cache keeps rebuilds fast.
   - name: build-api
     image: woodpeckerci/plugin-kaniko
     settings:
@@ -31,6 +23,7 @@ steps:
 
   - name: build-worker
     image: woodpeckerci/plugin-kaniko
+    depends_on: [build-api]
     settings:
       registry: registry.container-registry:5000
       repo: rss-worker
@@ -43,6 +36,12 @@ steps:
       dockerfile: worker/Dockerfile
       cache: true
       cache_repo: rss-worker-cache
+
+  - name: create-ui-env
+    image: alpine:latest
+    depends_on: [build-worker]
+    commands:
+      - sh ui-next/create-env.sh
 
   - name: build-ui
     image: woodpeckerci/plugin-kaniko
