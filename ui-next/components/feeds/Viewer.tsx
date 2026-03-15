@@ -80,7 +80,7 @@ export default function Viewer({
   }
 
   function handleMarkAllRead() {
-    markFeedRead({ params: { path: { id: feed.id } } }, feed.id);
+    markFeedRead({ params: { path: { id: feed.id } } });
   }
 
   async function handleUnsubscribe() {
