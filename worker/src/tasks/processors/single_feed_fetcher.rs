@@ -58,6 +58,12 @@ impl TaskProcessor for SingleFeedFetcher {
             .await
             .with_context(|| format!("Failed to fetch feed {}", feed.id))?;
 
+        tracing::info!(
+            feed_id = feed.id,
+            new_articles,
+            "completed single feed fetch"
+        );
+
         Ok(())
     }
 }
