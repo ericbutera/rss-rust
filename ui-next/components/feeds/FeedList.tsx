@@ -57,8 +57,8 @@ export default function FeedList({
                 icon={faRss}
                 className={`shrink-0 ${hasUnread ? "text-primary" : "opacity-60"}`}
               />
-              <div className="overflow-hidden min-w-0">
-                <span className="whitespace-nowrap block ">{label}</span>
+              <div className="overflow-hidden min-w-0 flex-1">
+                <span className="whitespace-nowrap block">{label}</span>
               </div>
               {taskId && (
                 <VerificationIndicator
