@@ -80,7 +80,7 @@ export default function Viewer({
   }
 
   function handleMarkAllRead() {
-    markFeedRead({ params: { path: { id: feed.id } } });
+    markFeedRead({ params: { path: { id: feed.id } } }, feed.id);
   }
 
   async function handleUnsubscribe() {
@@ -118,7 +118,6 @@ export default function Viewer({
         onUnsubscribe={handleUnsubscribe}
       />
 
-      {/* Article content */}
       <div className="flex flex-col flex-1">
         {isLoading && (
           <div className="flex justify-center py-16">
@@ -138,6 +137,7 @@ export default function Viewer({
           articles={articles}
           openArticleId={openArticleId}
           toggleArticle={toggleArticle}
+          lastReadAt={feed.last_read_at}
         />
 
         {/* Infinite scroll sentinel */}
@@ -150,7 +150,6 @@ export default function Viewer({
           )}
         </div>
       </div>
-      {/* end article content */}
 
       {showHistory && (
         <FetchHistoryModal feed={feed} onClose={() => setShowHistory(false)} />
@@ -158,5 +157,3 @@ export default function Viewer({
     </div>
   );
 }
-
-// ArticleBody and helpers moved to ArticleList.tsx

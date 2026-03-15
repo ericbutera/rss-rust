@@ -73,17 +73,23 @@ export default function ArticleList({
   articles,
   openArticleId,
   toggleArticle,
+  lastReadAt,
 }: {
   articles: ArticleResponse[];
   openArticleId: number | null;
   toggleArticle: (article: ArticleResponse) => void;
+  lastReadAt?: string | null;
 }) {
+  const articleRead = (article: ArticleResponse) =>
+    Boolean(article.read_at) ||
+    (!!lastReadAt && article.created_at <= lastReadAt);
+  const articleOpen = (article: ArticleResponse) =>
+    openArticleId === article.id;
   return (
     <>
       {articles.map((article: ArticleResponse) => {
-        const isRead = Boolean(article.read_at);
-        const isOpen = openArticleId === article.id;
-
+        let isRead = articleRead(article);
+        let isOpen = articleOpen(article);
         return (
           <div
             key={article.id}
