@@ -1,14 +1,14 @@
 use crate::app_error::AppError;
 use crate::entities::{articles, feeds, fetch_history, user_articles, user_feeds};
 use crate::storage::AppStorage;
-use auth::UserContext;
+use kaleido::auth::UserContext;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     routing::{delete, get, post, put},
     Json, Router,
 };
-use glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
+use kaleido::glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

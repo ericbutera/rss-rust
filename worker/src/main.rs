@@ -1,5 +1,5 @@
 use api::config::Config;
-use background_jobs::worker::{
+use kaleido::background_jobs::worker::{
     init_json_tracing, spawn_metrics_server, TaskWorker, WorkerConfig, WorkerConfigDefaults,
     WorkerMetrics,
 };

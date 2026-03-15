@@ -1,7 +1,7 @@
 use crate::feed_fetcher::FeedFetchService;
 use api::entities::{feeds, fetch_history};
 use async_trait::async_trait;
-use background_jobs::worker::TaskProcessor;
+use kaleido::background_jobs::worker::TaskProcessor;
 use chrono::Utc;
 use sea_orm::DatabaseConnection;
 use serde_json::Value;

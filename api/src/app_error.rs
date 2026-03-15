@@ -33,8 +33,8 @@ impl From<DbErr> for AppError {
     }
 }
 
-impl From<auth::AuthError> for AppError {
-    fn from(err: auth::AuthError) -> Self {
+impl From<kaleido::auth::AuthError> for AppError {
+    fn from(err: kaleido::auth::AuthError) -> Self {
         Self {
             code: err.code,
             message: err.message,

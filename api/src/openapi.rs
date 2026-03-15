@@ -1,6 +1,6 @@
-use auth::openapi as auth_openapi;
-use glass::openapi as glass_openapi;
-use glass::SecurityAddon;
+use kaleido::auth::openapi as auth_openapi;
+use kaleido::glass::openapi as glass_openapi;
+use kaleido::glass::SecurityAddon;
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
@@ -53,9 +53,9 @@ use utoipa::OpenApi;
             glass_openapi::schemas::PaginatedResponse<glass_openapi::schemas::FeatureFlagResponse>,
             glass_openapi::schemas::PaginatedResponse<glass_openapi::schemas::PublicFlagResponse>,
             glass_openapi::schemas::SystemMetrics,
-            glass::data::pagination::PaginationParams,
-            glass::data::pagination::PaginatedResponse<crate::controllers::feeds::ArticleResponse>,
-            glass::data::pagination::PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>,
+            kaleido::glass::data::pagination::PaginationParams,
+            kaleido::glass::data::pagination::PaginatedResponse<crate::controllers::feeds::ArticleResponse>,
+            kaleido::glass::data::pagination::PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>,
             crate::controllers::feeds::CreateFeedRequest,
             crate::controllers::feeds::FeedResponse,
             crate::controllers::feeds::ArticleResponse,
@@ -67,7 +67,7 @@ use utoipa::OpenApi;
             crate::controllers::admin::FetchNowResponse,
             crate::controllers::admin::AdminFeedResponse,
             crate::controllers::admin::AdminUpdateFeedRequest,
-            glass::aggregator::NamedStat,
+            kaleido::glass::aggregator::NamedStat,
         )
     ),
     tags(

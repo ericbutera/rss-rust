@@ -1,6 +1,6 @@
 // Re-export auth entities from auth crate
-pub use auth::entities::refresh_tokens;
-pub use auth::entities::users;
+pub use kaleido::auth::entities::refresh_tokens;
+pub use kaleido::auth::entities::users;
 
 // API-specific entities
 pub mod articles;

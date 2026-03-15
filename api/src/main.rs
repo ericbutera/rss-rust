@@ -1,11 +1,12 @@
 use api::config::Config;
 use api::storage::AppStorage;
-use api::{app, init_tracing_subscriber};
+use api::{app, init_tracing_subscriber, metrics};
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
     init_tracing_subscriber().await;
+    metrics::init_metrics().await;
     let cfg = Config::init_from_env();
 
     let storage = AppStorage::new(&cfg.database_url).await;

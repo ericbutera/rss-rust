@@ -1,4 +1,4 @@
-use glass::email::TemplateRegistry;
+use kaleido::glass::email::TemplateRegistry;
 use serde::Serialize;
 use std::error::Error;
 

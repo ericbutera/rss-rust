@@ -1,7 +1,7 @@
 use anyhow::Context;
 use api::entities::feeds;
 use async_trait::async_trait;
-use background_jobs::worker::TaskProcessor;
+use kaleido::background_jobs::worker::TaskProcessor;
 use feed_rs::parser;
 use reqwest::header::ETAG;
 use sea_orm::DatabaseConnection;

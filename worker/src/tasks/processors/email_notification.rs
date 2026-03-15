@@ -1,9 +1,9 @@
 use crate::email::EmailTemplate;
 use api::config::Config;
 use async_trait::async_trait;
-use auth::worker::tasks::EmailNotificationTask;
-use background_jobs::worker::TaskProcessor;
-use glass::email::{EmailService, SmtpConfig};
+use kaleido::auth::worker::tasks::EmailNotificationTask;
+use kaleido::background_jobs::worker::TaskProcessor;
+use kaleido::glass::email::{EmailService, SmtpConfig};
 use serde_json::json;
 use std::error::Error;
 use std::sync::Arc;

@@ -1,14 +1,14 @@
 use crate::app_error::AppError;
 use crate::entities::{articles, feeds, fetch_history, user_feeds};
 use crate::storage::AppStorage;
-use auth::AdminUserContext;
+use kaleido::auth::AdminUserContext;
 use axum::{
     extract::{Path, Query, State},
     routing::{get, post, put},
     Json, Router,
 };
-use glass::aggregator::{Aggregator, NamedStat};
-use glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
+use kaleido::glass::aggregator::{Aggregator, NamedStat};
+use kaleido::glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -246,7 +246,7 @@ async fn update_feed(
         PaginationParams,
     ),
     responses(
-        (status = 200, description = "Fetch history", body = glass::data::pagination::PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>),
+        (status = 200, description = "Fetch history", body = kaleido::glass::data::pagination::PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>),
         (status = 401, description = "Unauthorized"),
         (status = 403, description = "Forbidden"),
         (status = 404, description = "Feed not found"),

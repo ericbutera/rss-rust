@@ -3,6 +3,7 @@ pub mod config;
 pub mod controllers;
 pub mod entities;
 pub mod feature_flags_keys;
+pub mod metrics;
 pub mod openapi;
 pub mod storage;
 pub mod tasks;
@@ -11,6 +12,8 @@ use crate::config::Config;
 use crate::openapi::ApiDoc;
 use crate::storage::AppStorage;
 use axum::http::{HeaderName, HeaderValue, Method};
+use axum::middleware::from_fn;
+use axum::routing::get;
 use axum::Router;
 use std::sync::Arc;
 use tower_http::cors::{AllowOrigin, CorsLayer};
@@ -49,7 +52,9 @@ pub async fn app(app_state: Arc<AppStorage>) -> Router {
 
     controllers::routes()
         .merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", openapi))
+        .route("/metrics", get(metrics::metrics_route))
         .layer(cors)
+        .layer(from_fn(metrics::metrics_middleware))
         .layer(TraceLayer::new_for_http())
         .with_state(app_state)
 }
