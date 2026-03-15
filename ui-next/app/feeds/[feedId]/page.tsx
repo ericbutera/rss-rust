@@ -35,7 +35,8 @@ export default function FeedPage() {
       feed={feed}
       openArticleId={null}
       onToggleArticle={(articleId) => {
-        if (articleId !== null) router.push(`/feeds/${feedId}/${articleId}`);
+        if (articleId !== null)
+          router.push(`/feeds/${feedId}/${articleId}`, { scroll: false });
       }}
       onUnsubscribed={() => router.push("/feeds")}
     />

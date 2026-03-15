@@ -41,9 +41,9 @@ export default function ArticlePage() {
       onToggleArticle={(newId) => {
         if (newId !== null) {
           // replace so switching articles doesn't pile up history
-          router.replace(`/feeds/${feedId}/${newId}`);
+          router.replace(`/feeds/${feedId}/${newId}`, { scroll: false });
         } else {
-          router.push(`/feeds/${feedId}`);
+          router.push(`/feeds/${feedId}`, { scroll: false });
         }
       }}
       onUnsubscribed={() => router.push("/feeds")}
