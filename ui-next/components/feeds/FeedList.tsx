@@ -1,7 +1,6 @@
 "use client";
 
 import { useFeeds, useReorderFeeds, type FeedResponse } from "@/lib/queries";
-import { usePendingVerifications } from "@/lib/usePendingVerifications";
 import {
   DndContext,
   PointerSensor,
@@ -23,12 +22,16 @@ import {
   faRss,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import VerificationIndicator from "./VerificationIndicator";
+
+import type { Verifications } from "@/lib/usePendingVerifications";
 
 interface FeedListProps {
   selectedFeed: FeedResponse | null;
   onSelectFeed: (feed: FeedResponse | null) => void;
+  verifications: Verifications;
+  onRemoveVerification: (feedId: number) => void;
 }
 
 interface SortableFeedItemProps {
@@ -60,6 +63,11 @@ function SortableFeedItem({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const handleVerificationDone = useCallback(
+    () => onRemoveVerification(feed.id),
+    [onRemoveVerification, feed.id],
+  );
 
   const label =
     feed.name ??
@@ -99,7 +107,7 @@ function SortableFeedItem({
           <VerificationIndicator
             feed={feed}
             taskId={taskId}
-            onDone={() => onRemoveVerification(feed.id)}
+            onDone={handleVerificationDone}
           />
         )}
         {hasUnread && (
@@ -115,11 +123,11 @@ function SortableFeedItem({
 export default function FeedList({
   selectedFeed,
   onSelectFeed,
+  verifications,
+  onRemoveVerification: removeVerification,
 }: FeedListProps) {
   const { data: feeds, isLoading } = useFeeds();
   const { mutateAsync: reorderFeeds } = useReorderFeeds();
-  const { verifications, remove: removeVerification } =
-    usePendingVerifications();
 
   // Local copy for optimistic reordering
   const [localFeeds, setLocalFeeds] = useState<FeedResponse[] | null>(null);

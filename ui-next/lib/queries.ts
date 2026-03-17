@@ -221,6 +221,21 @@ export function useAdminAppMetrics() {
 
 // ── Invalidation helpers ──────────────────────────────────────────────────────
 
+export function useRenameFeed() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/feeds/{id}/name");
+  return {
+    ...mutation,
+    mutateAsync: async (feedId: number, name: string | null): Promise<void> => {
+      await mutation.mutateAsync({
+        params: { path: { id: feedId } },
+        body: { name },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+    },
+  };
+}
+
 export function useInvalidateFeeds() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });

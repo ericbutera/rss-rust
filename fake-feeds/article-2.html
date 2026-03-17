@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Memory Safety Without a GC: A Benchmark Story</title>
+</head>
+<body>
+  <header>
+    <a href="/articles.html">← The Rustacean Post</a>
+  </header>
+  <article>
+    <h1>Memory Safety Without a GC: A Benchmark Story</h1>
+    <p class="byline">Bob Smith · March 12, 2026 · 12 min read</p>
+
+    <p>Garbage collectors have long been the dominant strategy for safe memory management. Rust's ownership model offers a different path — and this article examines whether the runtime cost savings are real, and at what developer-experience price.</p>
+
+    <h2>Methodology</h2>
+    <p>We ran three workloads — a high-throughput JSON parsing pipeline, a concurrent key-value store, and a graph traversal algorithm — across Rust, Go, Java (with G1GC), and Python. Each test was run ten times on identical hardware with results normalised to the Rust baseline.</p>
+
+    <h2>Allocation Rate</h2>
+    <p>Rust allocated the least memory across all three workloads. Go came second, with allocation rates 1.4× higher due to its interface boxing semantics. Java's allocation rate was 3.1× higher, though G1GC recovered most of it efficiently.</p>
+
+    <h2>GC Pause Impact</h2>
+    <p>Go's concurrent GC introduced sub-millisecond pauses even under load. Java's G1GC produced occasional pauses of 15–40ms during its concurrent marking phase, which was visible in P99 latency histograms. Rust had no pauses — by definition.</p>
+
+    <h2>Developer Experience</h2>
+    <p>The borrow checker required an average of 2.3 additional hours of upfront design time per feature compared to Go in our informal survey of six engineers. However, the resulting code had zero data races in production across 18 months of operation.</p>
+
+    <h2>Conclusion</h2>
+    <p>For latency-sensitive workloads where P99 matters, Rust's advantage is measurable and consistent. For throughput-first services, the gap narrows significantly and the developer productivity tradeoff becomes the dominant factor.</p>
+  </article>
+  <footer>
+    <p>© 2026 The Rustacean Post</p>
+  </footer>
+</body>
+</html>

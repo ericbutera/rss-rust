@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fake Feeds — Test Index</title>
+</head>
+<body>
+  <h1>Fake Feed Sources</h1>
+  <p>These pages are served by the <code>fake-feeds</code> compose service for testing the LLM parsing engine.</p>
+  <ul>
+    <li><a href="/articles.html">articles.html</a> — Clean blog listing (clear article structure)</li>
+    <li><a href="/news.html">news.html</a> — News site listing (headline + summary rows)</li>
+    <li><a href="/minimal.html">minimal.html</a> — Minimal page, just links (stress test)</li>
+    <li><a href="/noisy.html">noisy.html</a> — Noisy page with nav/ads mixed in (recall test)</li>
+    <li><a href="/rss.xml">rss.xml</a> — Real RSS feed (should be detected without LLM)</li>
+    <li><a href="/article-1.html">article-1.html</a> — Individual article with OG tags</li>
+    <li><a href="/article-2.html">article-2.html</a> — Individual article, no OG tags</li>
+    <li><a href="/article-3.html">article-3.html</a> — Individual article, no OG tags</li>
+  </ul>
+</body>
+</html>

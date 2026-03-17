@@ -6,7 +6,7 @@ import { useFeeds, type FeedResponse } from "@/lib/queries";
 import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export default function FeedsLayout({ children }: { children: ReactNode }) {
   const params = useParams<{ feedId?: string }>();
@@ -17,6 +17,13 @@ export default function FeedsLayout({ children }: { children: ReactNode }) {
   const feedId = params.feedId ? parseInt(params.feedId, 10) : null;
   const selectedFeed =
     feedId !== null ? (feeds.find((f) => f.id === feedId) ?? null) : null;
+
+  // Auto-select the first feed when navigating to /feeds with no specific feed
+  useEffect(() => {
+    if (feedId === null && feeds.length > 0) {
+      router.replace(`/feeds/${feeds[0].id}`);
+    }
+  }, [feedId, feeds, router]);
 
   function handleSelectFeed(feed: FeedResponse | null) {
     setSidebarOpen(false);

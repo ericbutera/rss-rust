@@ -59,6 +59,11 @@ impl TaskProcessor for FeedFetcher {
         let mut error_count = 0usize;
 
         for feed in &active_feeds {
+            // Scraped feeds are managed by PageExtractor, not the RSS fetch cycle
+            if feed.feed_type == "scraped" {
+                continue;
+            }
+
             let is_due = match last_fetch_map.get(&feed.id) {
                 None => true,
                 Some(last) => (now - *last).num_minutes() >= feed.fetch_interval_minutes as i64,

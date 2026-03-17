@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>The Rustacean Post</title>
+    <link>http://fake-feeds:80/articles.html</link>
+    <description>Deep dives into the Rust programming language.</description>
+    <item>
+      <title>Async Rust in 2026: What Changed</title>
+      <link>http://fake-feeds:80/article-1.html</link>
+      <description>The Rust 2026 edition brought sweeping improvements to the async ecosystem.</description>
+      <pubDate>Sat, 14 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>http://fake-feeds:80/article-1.html</guid>
+    </item>
+    <item>
+      <title>Memory Safety Without a GC: A Benchmark Story</title>
+      <link>http://fake-feeds:80/article-2.html</link>
+      <description>How Rust's ownership model has steadily replaced garbage-collected runtimes.</description>
+      <pubDate>Thu, 12 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>http://fake-feeds:80/article-2.html</guid>
+    </item>
+    <item>
+      <title>Trait Objects vs Generics: When Does vtable Overhead Actually Matter?</title>
+      <link>http://fake-feeds:80/article-3.html</link>
+      <description>Dynamic dispatch vs. monomorphised generics investigated.</description>
+      <pubDate>Tue, 10 Mar 2026 09:00:00 +0000</pubDate>
+      <guid>http://fake-feeds:80/article-3.html</guid>
+    </item>
+  </channel>
+</rss>

@@ -117,4 +117,31 @@ impl Model {
         .insert(db)
         .await
     }
+
+    /// Insert a new article with all fields populated (used by the page extractor).
+    pub async fn create_full(
+        db: &impl ConnectionTrait,
+        feed_id: i32,
+        url: String,
+        title: Option<String>,
+        description: Option<String>,
+        image_url: Option<String>,
+        preview: Option<String>,
+        content: Option<String>,
+        guid: Option<String>,
+    ) -> Result<Self, DbErr> {
+        ActiveModel {
+            feed_id: Set(feed_id),
+            url: Set(url),
+            title: Set(title),
+            description: Set(description),
+            image_url: Set(image_url),
+            preview: Set(preview),
+            content: Set(content),
+            guid: Set(guid),
+            ..Default::default()
+        }
+        .insert(db)
+        .await
+    }
 }

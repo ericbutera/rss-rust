@@ -19,6 +19,10 @@ pub struct Model {
     pub deactivated_at: Option<DateTime<Utc>>,
     pub created_by: Option<i32>,
     pub fetch_interval_minutes: i32,
+    /// "rss" (normal feed) or "scraped" (no RSS found, extracted by LLM)
+    pub feed_type: String,
+    /// Original page URL entered by the user; populated by FeedDiscovery
+    pub source_url: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -134,6 +138,40 @@ impl Model {
             .ok_or_else(|| DbErr::RecordNotFound(format!("Feed {id} not found")))?;
         let mut active = feed.into_active_model();
         active.verified_at = Set(Some(Utc::now()));
+        active.update(db).await?;
+        Ok(())
+    }
+
+    /// Update feed after RSS discovery.
+    ///
+    /// - `feed_type`: `"rss"` or `"scraped"`
+    /// - `new_url`: if discovery found a different RSS URL, supply it here;
+    ///   url_hash is recomputed accordingly
+    /// - `source_url`: the original page URL the user entered
+    pub async fn update_for_discovery(
+        db: &impl ConnectionTrait,
+        id: i32,
+        feed_type: &str,
+        new_url: Option<&str>,
+        source_url: &str,
+    ) -> Result<(), DbErr> {
+        use sea_orm::{EntityTrait, IntoActiveModel};
+        use sha2::{Digest, Sha256};
+
+        let feed = Entity::find_by_id(id)
+            .one(db)
+            .await?
+            .ok_or_else(|| DbErr::RecordNotFound(format!("Feed {id} not found")))?;
+        let mut active = feed.into_active_model();
+        active.feed_type = Set(feed_type.to_string());
+        active.source_url = Set(Some(source_url.to_string()));
+        if let Some(url) = new_url {
+            let mut hasher = Sha256::new();
+            hasher.update(url.as_bytes());
+            let hash = hex::encode(hasher.finalize());
+            active.url = Set(url.to_string());
+            active.url_hash = Set(hash);
+        }
         active.update(db).await?;
         Ok(())
     }

@@ -15,6 +15,7 @@ pub struct Model {
     pub all_articles_read_at: Option<DateTime<Utc>>,
     pub unread_count: i32,
     pub sort_order: i32,
+    pub name_override: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -202,5 +203,23 @@ impl Model {
             )
             .await?;
         Ok(result.rows_affected())
+    }
+
+    /// Set (or clear) the user's custom name for a feed subscription.
+    /// Returns `None` if the subscription doesn't exist.
+    pub async fn set_name_override(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        feed_id: i32,
+        name: Option<String>,
+    ) -> Result<Option<Self>, DbErr> {
+        use sea_orm::{ActiveModelTrait, EntityTrait};
+        let Some(row) = Entity::find_by_id((user_id, feed_id)).one(db).await? else {
+            return Ok(None);
+        };
+        let mut active: ActiveModel = row.into();
+        active.name_override = Set(name);
+        active.updated_at = Set(Utc::now());
+        active.update(db).await.map(Some)
     }
 }

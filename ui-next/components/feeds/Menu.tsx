@@ -1,6 +1,7 @@
 "use client";
 
 import { type FeedResponse } from "@/lib/queries";
+import { usePendingVerifications } from "@/lib/usePendingVerifications";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
@@ -14,6 +15,11 @@ interface MenuProps {
 
 export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
   const [showAddForm, setShowAddForm] = useState(false);
+  const {
+    verifications,
+    add: addVerification,
+    remove: removeVerification,
+  } = usePendingVerifications();
 
   return (
     <div className="flex flex-col h-full p-2">
@@ -30,9 +36,19 @@ export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
         </button>
       </div>
 
-      {showAddForm && <AddFeedForm onClose={() => setShowAddForm(false)} />}
+      {showAddForm && (
+        <AddFeedForm
+          onClose={() => setShowAddForm(false)}
+          onVerificationAdded={addVerification}
+        />
+      )}
 
-      <FeedList selectedFeed={selectedFeed} onSelectFeed={onSelectFeed} />
+      <FeedList
+        selectedFeed={selectedFeed}
+        onSelectFeed={onSelectFeed}
+        verifications={verifications}
+        onRemoveVerification={removeVerification}
+      />
     </div>
   );
 }

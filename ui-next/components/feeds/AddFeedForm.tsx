@@ -1,16 +1,15 @@
 "use client";
 
 import { useCreateFeed } from "@/lib/queries";
-import { usePendingVerifications } from "@/lib/usePendingVerifications";
 import { useState } from "react";
 
 interface AddFeedFormProps {
   onClose: () => void;
+  onVerificationAdded: (feedId: number, taskId: string) => void;
 }
 
-export default function AddFeedForm({ onClose }: AddFeedFormProps) {
+export default function AddFeedForm({ onClose, onVerificationAdded }: AddFeedFormProps) {
   const { mutateAsync: createFeed, isPending } = useCreateFeed();
-  const { add: addVerification } = usePendingVerifications();
 
   const [newUrl, setNewUrl] = useState("");
   const [newName, setNewName] = useState("");
@@ -25,7 +24,7 @@ export default function AddFeedForm({ onClose }: AddFeedFormProps) {
         name: newName || undefined,
       });
       if (result.task_id) {
-        addVerification(result.feed.id, result.task_id);
+        onVerificationAdded(result.feed.id, result.task_id);
       }
       setNewUrl("");
       setNewName("");

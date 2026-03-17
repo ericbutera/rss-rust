@@ -61,6 +61,13 @@ tasks:
     cmds:
       - cargo test
 
+  test:worker:
+    cmds:
+      - cargo test --test worker
+
+  test:worker:integration:
+      - cargo test -p worker -- --ignored
+
   openapi:react-query:
     desc: Generate OpenAPI TypeScript definitions from running API
     vars:

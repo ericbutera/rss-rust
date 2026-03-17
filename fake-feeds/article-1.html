@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Async Rust in 2026: What Changed — The Rustacean Post</title>
+  <meta property="og:title" content="Async Rust in 2026: What Changed" />
+  <meta property="og:description" content="The Rust 2026 edition brought sweeping improvements to the async ecosystem. From stable async closures to a revised wake protocol." />
+  <meta property="og:image" content="http://fake-feeds:80/images/async-rust.jpg" />
+  <meta property="og:url" content="http://fake-feeds:80/article-1.html" />
+</head>
+<body>
+  <header>
+    <a href="/articles.html">← The Rustacean Post</a>
+  </header>
+  <article>
+    <h1>Async Rust in 2026: What Changed</h1>
+    <p class="byline">Alice Johnson · March 14, 2026 · 8 min read</p>
+
+    <p>The Rust 2026 edition brought sweeping improvements to the async ecosystem. From the stabilisation of async closures to the revised wake protocol in the core executor interface, the changes are worth understanding in depth.</p>
+
+    <p>Tokio 3.0, released alongside the edition, now exposes cooperative yield points at every await, making it much harder to accidentally starve the scheduler. The result is lower tail latency in applications serving thousands of concurrent connections.</p>
+
+    <p>The async-std project has officially merged into smol, creating a unified lightweight alternative for use cases that do not need Tokio's full feature surface. This consolidation simplifies the ecosystem considerably.</p>
+
+    <p>For embedded developers, embassy now ships a HAL generator that outputs correct async peripheral drivers from a device-tree description, cutting the time to bring up new hardware from weeks to hours.</p>
+
+    <p>Perhaps the most exciting stabilisation is the AsyncIterator trait, which finally landed in std after several trait-solver overhauls. Combined with the new for-await syntax sugar, writing async pipelines now reads as cleanly as synchronous code.</p>
+
+    <h2>What This Means for Production Code</h2>
+    <p>Most existing Tokio applications will compile without changes. The only breaking change is the removal of the deprecated <code>block_on</code> alias — replace it with <code>Runtime::block_on</code> or the new <code>tokio::main</code> macro variant.</p>
+
+    <p>If you are running a high-traffic HTTP service, we recommend upgrading Tokio first and watching your tail-latency metrics. In our benchmarks, P99 dropped by 18% under sustained load simply from upgrading the runtime with no other changes.</p>
+  </article>
+  <footer>
+    <p>© 2026 The Rustacean Post</p>
+  </footer>
+</body>
+</html>

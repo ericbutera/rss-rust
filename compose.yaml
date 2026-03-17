@@ -46,11 +46,22 @@ services:
       SMTP_PORT: 1025
       MAIL_FROM: noreply@rss.local
       SMTP_FROM_NAME: rss
+      OLLAMA_URL: http://ollama:11434
     depends_on:
       - postgres
+      - ollama
     volumes:
       - .:/app
       - ../kaleido:/kaleido:ro
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_data:/root/.ollama
+    # Pull the model on first start; subsequent starts skip if already cached
+    entrypoint: ['/bin/sh', '-c', 'ollama serve & sleep 5 && ollama pull qwen2.5:3b && wait']
 
   ui-next:
     build:
@@ -68,6 +79,15 @@ services:
       - ../kaleido:/app/kaleido:ro
       - ui_next_node_modules:/app/node_modules
 
+  fake-feeds:
+    image: nginx:alpine
+    volumes:
+      - ./fake-feeds:/usr/share/nginx/html:ro
+    ports:
+      - '8099:80'
+    restart: never
+
 volumes:
   postgres_data:
   ui_next_node_modules:
+  ollama_data:

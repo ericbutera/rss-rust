@@ -29,6 +29,8 @@ sha2 = "0.10"
 ammonia = "4"
 hex = "0.4"
 anyhow = "1"
+scraper = "0.21"
+url = "2"
 
 [dev-dependencies]
 mockito = "1"

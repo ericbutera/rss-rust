@@ -39,6 +39,8 @@ pub async fn register_default_processors(
     let fetcher = Arc::new(FeedFetcher::new(db.clone()));
     let verifier = Arc::new(FeedVerifier::new(db.clone()));
     let single_fetcher = Arc::new(SingleFeedFetcher::new(db.clone()));
+    let feed_discovery = Arc::new(FeedDiscovery::new(db.clone()));
+    let page_extractor = Arc::new(PageExtractor::new(db.clone()));
 
     // Spawn the cron scheduler so feed_fetcher tasks are enqueued on schedule
     let db_for_scheduler = (*db).clone();
@@ -57,5 +59,7 @@ pub async fn register_default_processors(
     Ok(worker
         .register_processor(fetcher)
         .register_processor(verifier)
-        .register_processor(single_fetcher))
+        .register_processor(single_fetcher)
+        .register_processor(feed_discovery)
+        .register_processor(page_extractor))
 }

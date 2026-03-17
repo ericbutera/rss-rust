@@ -61,6 +61,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds", post(create_feed))
         .route("/feeds/reorder", put(reorder_feeds))
         .route("/feeds/:id", delete(unsubscribe_feed))
+        .route("/feeds/:id/name", put(rename_feed))
         .route("/feeds/:id/articles", get(list_articles))
         .route("/feeds/:id/read", put(mark_feed_read))
         .route("/feeds/:id/fetch-history", get(list_fetch_history))
@@ -83,6 +84,7 @@ pub struct CreateFeedRequest {
 pub struct FeedResponse {
     pub id: i32,
     pub url: String,
+    /// Display name: user's override if set, otherwise the feed's own title.
     pub name: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -100,6 +102,12 @@ pub struct FeedResponse {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateFeedNameRequest {
+    /// New display name. Pass `null` to clear the override and fall back to the feed's default name.
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ReorderFeedItem {
     pub feed_id: i32,
     pub sort_order: i32,
@@ -113,11 +121,12 @@ impl FeedResponse {
         last_fetched_at: Option<chrono::DateTime<chrono::Utc>>,
         unread_count: u64,
         sort_order: i32,
+        name_override: Option<String>,
     ) -> Self {
         FeedResponse {
             id: m.id,
             url: m.url,
-            name: m.name,
+            name: name_override.or(m.name),
             created_at: m.created_at,
             updated_at: m.updated_at,
             verified_at: m.verified_at,
@@ -260,6 +269,10 @@ pub async fn list_feeds(
         .iter()
         .map(|uf| (uf.feed_id, uf.sort_order))
         .collect();
+    let name_override_map: HashMap<i32, Option<String>> = user_feed_rows
+        .iter()
+        .map(|uf| (uf.feed_id, uf.name_override.clone()))
+        .collect();
     let feed_ids: Vec<i32> = user_feed_rows.into_iter().map(|uf| uf.feed_id).collect();
 
     let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids)
@@ -279,6 +292,7 @@ pub async fn list_feeds(
             let last_fetched_at = last_fetch_map.get(&f.id).copied();
             let unread_count = unread_map.get(&f.id).copied().unwrap_or(0).max(0) as u64;
             let sort_order = sort_order_map.get(&f.id).copied().unwrap_or(0);
+            let name_override = name_override_map.get(&f.id).cloned().flatten();
             FeedResponse::from_model(
                 f,
                 last_read_at,
@@ -286,6 +300,7 @@ pub async fn list_feeds(
                 last_fetched_at,
                 unread_count,
                 sort_order,
+                name_override,
             )
         })
         .collect();
@@ -370,7 +385,7 @@ pub async fn create_feed(
     Ok((
         StatusCode::CREATED,
         Json(CreateFeedResponse {
-            feed: FeedResponse::from_model(feed, None, chrono::Utc::now(), None, 0, 0),
+            feed: FeedResponse::from_model(feed, None, chrono::Utc::now(), None, 0, 0, None),
             task_id,
         }),
     ))
@@ -400,6 +415,51 @@ pub async fn unsubscribe_feed(
     user_feeds::Model::delete(db, user_id, id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
+
+/// Set a custom display name for a feed subscription (persisted on user_feeds)
+#[utoipa::path(
+    put,
+    path = "/feeds/{id}/name",
+    params(
+        ("id" = i32, Path, description = "Feed ID")
+    ),
+    request_body = UpdateFeedNameRequest,
+    responses(
+        (status = 200, description = "Name updated", body = FeedResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Feed not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn rename_feed(
+    State(state): State<Arc<AppStorage>>,
+    user_ctx: UserContext<AppStorage>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateFeedNameRequest>,
+) -> Result<Json<FeedResponse>, AppError> {
+    let db = &state.db;
+    let user_id = user_ctx.user.id;
+
+    let uf = user_feeds::Model::set_name_override(db, user_id, id, payload.name)
+        .await?
+        .ok_or_else(|| AppError::not_found("Feed subscription not found"))?;
+
+    let feed = feeds::Model::find_by_id(db, id)
+        .await?
+        .ok_or_else(|| AppError::not_found("Feed not found"))?;
+
+    Ok(Json(FeedResponse::from_model(
+        feed,
+        uf.all_articles_read_at,
+        uf.created_at,
+        None,
+        uf.unread_count.max(0) as u64,
+        uf.sort_order,
+        uf.name_override,
+    )))
+}
+
 
 /// Get the status of a background task (e.g. feed verification)
 #[utoipa::path(

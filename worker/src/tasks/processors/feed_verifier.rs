@@ -1,8 +1,9 @@
 use anyhow::Context;
 use api::entities::feeds;
 use async_trait::async_trait;
-use kaleido::background_jobs::worker::TaskProcessor;
 use feed_rs::parser;
+use kaleido::background_jobs::worker::TaskProcessor;
+use kaleido::background_jobs::{DurableStorage, TaskQueue};
 use reqwest::header::ETAG;
 use sea_orm::DatabaseConnection;
 use serde::Deserialize;
@@ -89,7 +90,26 @@ impl TaskProcessor for FeedVerifier {
             .context("Failed to read response body during verification")?;
 
         // The only requirement is that it parses as a valid RSS/Atom feed.
-        parser::parse::<&[u8]>(bytes.as_ref()).context("Response is not a valid RSS/Atom feed")?;
+        // If it doesn't, hand off to FeedDiscovery which will look for the real
+        // feed URL or fall back to LLM-based page scraping.
+        if parser::parse::<&[u8]>(bytes.as_ref()).is_err() {
+            tracing::info!(
+                feed_id = p.feed_id,
+                "not a valid RSS/Atom feed — enqueuing feed_discovery"
+            );
+            let storage = DurableStorage::new((*self.db).clone());
+            let queue = TaskQueue::new(storage);
+            if let Err(e) = queue
+                .enqueue(
+                    "feed_discovery".to_string(),
+                    serde_json::json!({ "feed_id": p.feed_id }),
+                )
+                .await
+            {
+                tracing::warn!(feed_id = p.feed_id, "failed to enqueue feed_discovery: {e}");
+            }
+            return Ok(());
+        }
 
         feeds::Model::mark_verified(db, p.feed_id)
             .await

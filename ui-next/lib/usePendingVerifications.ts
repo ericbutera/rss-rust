@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 const STORAGE_KEY = "rss_feed_verifications";
 
 // feedId → taskId
-type Verifications = Record<number, string>;
+export type Verifications = Record<number, string>;
 
 function readFromStorage(): Verifications {
   if (typeof window === "undefined") return {};

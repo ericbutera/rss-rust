@@ -474,6 +474,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/feeds/{id}/name": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Set a custom display name for a feed subscription */
+    put: operations["rename_feed"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/feeds/{id}/articles": {
     parameters: {
       query?: never;
@@ -669,6 +686,10 @@ export interface components {
     CreateFeedRequest: {
       name?: string | null;
       url: string;
+    };
+    UpdateFeedNameRequest: {
+      /** @description New display name. Pass `null` to clear the override and fall back to the feed's default name. */
+      name?: string | null;
     };
     /** @description Response returned when a new feed subscription is created. */
     CreateFeedResponse: {
@@ -1957,6 +1978,47 @@ export interface operations {
         content?: never;
       };
       /** @description Subscription not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  rename_feed: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateFeedNameRequest"];
+      };
+    };
+    responses: {
+      /** @description Name updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found */
       404: {
         headers: {
           [name: string]: unknown;
