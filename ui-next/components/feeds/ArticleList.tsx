@@ -1,6 +1,9 @@
 "use client";
 
-import type { ArticleResponse } from "@/lib/queries";
+import { useToggleSaveArticle, type ArticleResponse } from "@/lib/queries";
+import { faBookmark as faBookmarkOutline } from "@fortawesome/free-regular-svg-icons";
+import { faBookmark } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import DOMPurify from "dompurify";
 import { useEffect, useState } from "react";
 
@@ -71,15 +74,18 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
 
 export default function ArticleList({
   articles,
+  feedId,
   openArticleId,
   toggleArticle,
   lastReadAt,
 }: {
   articles: ArticleResponse[];
+  feedId: number;
   openArticleId: number | null;
   toggleArticle: (article: ArticleResponse) => void;
   lastReadAt?: string | null;
 }) {
+  const { mutate: toggleSave } = useToggleSaveArticle();
   const articleRead = (article: ArticleResponse) =>
     Boolean(article.read_at) ||
     (!!lastReadAt && article.created_at <= lastReadAt);
@@ -115,6 +121,24 @@ export default function ArticleList({
                 <span className="truncate flex-1">
                   {article.title ?? article.url}
                 </span>
+                <div
+                  className="tooltip tooltip-left relative z-[2]"
+                  data-tip={
+                    article.saved_at ? "Unsave article" : "Save article"
+                  }
+                >
+                  <button
+                    className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSave(article.id, feedId);
+                    }}
+                  >
+                    <FontAwesomeIcon
+                      icon={article.saved_at ? faBookmark : faBookmarkOutline}
+                    />
+                  </button>
+                </div>
                 <span className="text-xs opacity-40 shrink-0 font-normal">
                   {relativeTime(article.created_at)}
                 </span>

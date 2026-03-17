@@ -227,6 +227,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/articles/{id}/save": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Toggle saved state for an article */
+    put: operations["toggle_save_article"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/auth/current": {
     parameters: {
       query?: never;
@@ -639,6 +656,11 @@ export interface components {
        * @description When the current user read this article (None = unread)
        */
       read_at?: string | null;
+      /**
+       * Format: date-time
+       * @description When the current user saved this article (None = not saved)
+       */
+      saved_at?: string | null;
       title?: string | null;
       /** Format: date-time */
       updated_at: string;
@@ -763,6 +785,11 @@ export interface components {
          * @description When the current user read this article (None = unread)
          */
         read_at?: string | null;
+        /**
+         * Format: date-time
+         * @description When the current user saved this article (None = not saved)
+         */
+        saved_at?: string | null;
         title?: string | null;
         /** Format: date-time */
         updated_at: string;
@@ -1322,6 +1349,43 @@ export interface operations {
       };
     };
   };
+  toggle_save_article: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Article ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Saved state toggled */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Article not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   current: {
     parameters: {
       query?: never;
@@ -1785,6 +1849,8 @@ export interface operations {
         page?: number;
         /** @description Number of items per page */
         per_page?: number;
+        /** @description Filter to only saved articles */
+        only_saved?: boolean;
       };
       header?: never;
       path: {

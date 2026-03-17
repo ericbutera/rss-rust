@@ -34,13 +34,14 @@ export function useFeeds() {
   return { ...resp, data: resp.data ?? [] };
 }
 
-export function useFeedArticles(feedId: number | null) {
+export function useFeedArticles(feedId: number | null, onlySaved = false) {
   return useInfiniteQuery<ArticlesPage, Error>({
-    queryKey: ["feeds", feedId, "articles"],
+    queryKey: ["feeds", feedId, "articles", { onlySaved }],
     enabled: feedId !== null,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
-      const url = `${API_URL}/feeds/${feedId}/articles?page=${pageParam}&per_page=20`;
+      const savedParam = onlySaved ? "&only_saved=true" : "";
+      const url = `${API_URL}/feeds/${feedId}/articles?page=${pageParam}&per_page=20${savedParam}`;
       const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return resp.json() as Promise<ArticlesPage>;
@@ -127,6 +128,26 @@ export function useMarkArticleRead() {
           }
         },
       });
+    },
+  };
+}
+
+export function useToggleSaveArticle() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/articles/{id}/save");
+  return {
+    ...mutation,
+    mutate: (articleId: number, feedId: number) => {
+      mutation.mutate(
+        { params: { path: { id: articleId } } },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: ["feeds", feedId, "articles"],
+            });
+          },
+        },
+      );
     },
   };
 }

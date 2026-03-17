@@ -67,6 +67,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds/tasks/:task_id", get(get_task_status))
         .route("/articles/:id", get(get_article))
         .route("/articles/:id/read", put(mark_article_read))
+        .route("/articles/:id/save", put(toggle_save_article))
 }
 
 // ── Request / Response types ──────────────────────────────────────────────────
@@ -167,12 +168,16 @@ pub struct ArticleResponse {
     pub guid: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
-    /// When the current user read this article (None = unread)
     pub read_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub saved_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl ArticleResponse {
-    fn from_model(m: articles::Model, read_at: Option<chrono::DateTime<chrono::Utc>>) -> Self {
+    fn from_model(
+        m: articles::Model,
+        read_at: Option<chrono::DateTime<chrono::Utc>>,
+        saved_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Self {
         ArticleResponse {
             id: m.id,
             feed_id: m.feed_id,
@@ -186,6 +191,7 @@ impl ArticleResponse {
             created_at: m.created_at,
             updated_at: m.updated_at,
             read_at,
+            saved_at,
         }
     }
 }
@@ -432,6 +438,14 @@ pub async fn get_task_status(
     }))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ListArticlesParams {
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
+    #[serde(default)]
+    pub only_saved: bool,
+}
+
 /// List articles for a feed
 #[utoipa::path(
     get,
@@ -452,11 +466,12 @@ pub async fn list_articles(
     State(state): State<Arc<AppStorage>>,
     user_ctx: UserContext<AppStorage>,
     Path(id): Path<i32>,
-    Query(params): Query<PaginationParams>,
+    Query(params): Query<ListArticlesParams>,
 ) -> Result<Json<PaginatedResponse<ArticleResponse>>, AppError> {
     let db = &state.db;
     let user_id = user_ctx.user.id;
 
+    // TODO: move to feed model method like `articles_for_user` that handles the user_articles join and state mapping internally
     // Verify feed exists and is active
     let feed = feeds::Model::find_by_id(db, id)
         .await?
@@ -468,16 +483,30 @@ pub async fn list_articles(
     let paginated = articles::Entity::find()
         .filter(articles::Column::FeedId.eq(id))
         .order_by_desc(articles::Column::CreatedAt)
-        .fetch_paginated(db, &params)
+        .fetch_paginated(db, &params.pagination)
         .await?;
 
     let article_ids: Vec<i32> = paginated.data.iter().map(|a| a.id).collect();
-    let read_map = user_articles::Model::read_map_for_user(db, user_id, article_ids).await?;
+    let state_map = user_articles::Model::state_map_for_user(db, user_id, article_ids).await?;
 
-    Ok(Json(paginated.map(|a| {
-        let read_at = read_map.get(&a.id).copied().flatten();
-        ArticleResponse::from_model(a, read_at)
-    })))
+    let mapped = paginated.map(|a| {
+        let (read_at, saved_at) = state_map.get(&a.id).copied().unwrap_or((None, None));
+        ArticleResponse::from_model(a, read_at, saved_at)
+    });
+
+    if params.only_saved {
+        let saved: Vec<ArticleResponse> = mapped
+            .data
+            .into_iter()
+            .filter(|a| a.saved_at.is_some())
+            .collect();
+        Ok(Json(PaginatedResponse {
+            data: saved,
+            metadata: mapped.metadata,
+        }))
+    } else {
+        Ok(Json(mapped))
+    }
 }
 
 /// Mark all articles in a feed as read for the current user
@@ -539,10 +568,12 @@ pub async fn get_article(
         .await?
         .ok_or_else(|| AppError::not_found("Article not found"))?;
 
-    let read_map = user_articles::Model::read_map_for_user(db, user_id, vec![id]).await?;
-    let read_at = read_map.get(&id).copied().flatten();
+    let state_map = user_articles::Model::state_map_for_user(db, user_id, vec![id]).await?;
+    let (read_at, saved_at) = state_map.get(&id).copied().unwrap_or((None, None));
 
-    Ok(Json(ArticleResponse::from_model(article, read_at)))
+    Ok(Json(ArticleResponse::from_model(
+        article, read_at, saved_at,
+    )))
 }
 
 /// Mark an article as read for the current user
@@ -666,4 +697,43 @@ pub async fn reorder_feeds(
     }
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Toggle saved state for an article (save if unsaved, unsave if saved)
+#[utoipa::path(
+    put,
+    path = "/articles/{id}/save",
+    params(
+        ("id" = i32, Path, description = "Article ID")
+    ),
+    responses(
+        (status = 200, description = "Saved state toggled", body = MessageResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Article not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn toggle_save_article(
+    State(state): State<Arc<AppStorage>>,
+    user_ctx: UserContext<AppStorage>,
+    Path(id): Path<i32>,
+) -> Result<Json<MessageResponse>, AppError> {
+    let db = &state.db;
+    let user_id = user_ctx.user.id;
+
+    articles::Model::find_by_id(db, id)
+        .await?
+        .ok_or_else(|| AppError::not_found("Article not found"))?;
+
+    let saved_at = user_articles::Model::toggle_save(db, user_id, id).await?;
+    let message = if saved_at.is_some() {
+        "Article saved"
+    } else {
+        "Article unsaved"
+    };
+
+    Ok(Json(MessageResponse {
+        message: message.to_string(),
+    }))
 }

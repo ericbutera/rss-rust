@@ -13,6 +13,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub article_id: i32,
     pub viewed_at: Option<DateTime<Utc>>,
+    pub saved_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -49,12 +50,13 @@ impl ActiveModelBehavior for ActiveModel {
 }
 
 impl Model {
-    /// Returns a map of `article_id → viewed_at` for the given user and article IDs.
-    pub async fn read_map_for_user(
+    /// Returns a map of `article_id → (viewed_at, saved_at)` for the given user and article IDs.
+    pub async fn state_map_for_user(
         db: &impl ConnectionTrait,
         user_id: i32,
         article_ids: Vec<i32>,
-    ) -> Result<std::collections::HashMap<i32, Option<DateTime<Utc>>>, DbErr> {
+    ) -> Result<std::collections::HashMap<i32, (Option<DateTime<Utc>>, Option<DateTime<Utc>>)>, DbErr>
+    {
         use sea_orm::{EntityTrait, QueryFilter};
         let rows = Entity::find()
             .filter(Column::UserId.eq(user_id))
@@ -63,7 +65,20 @@ impl Model {
             .await?;
         Ok(rows
             .into_iter()
-            .map(|ua| (ua.article_id, ua.viewed_at))
+            .map(|ua| (ua.article_id, (ua.viewed_at, ua.saved_at)))
+            .collect())
+    }
+
+    /// Returns a map of `article_id → viewed_at` for the given user and article IDs.
+    pub async fn read_map_for_user(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        article_ids: Vec<i32>,
+    ) -> Result<std::collections::HashMap<i32, Option<DateTime<Utc>>>, DbErr> {
+        let state_map = Self::state_map_for_user(db, user_id, article_ids).await?;
+        Ok(state_map
+            .into_iter()
+            .map(|(id, (viewed, _))| (id, viewed))
             .collect())
     }
 
@@ -95,6 +110,41 @@ impl Model {
                 .insert(db)
                 .await?;
                 Ok(true)
+            }
+        }
+    }
+
+    /// Toggle saved state for an article. Returns the new saved_at value.
+    pub async fn toggle_save(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        article_id: i32,
+    ) -> Result<Option<DateTime<Utc>>, DbErr> {
+        use sea_orm::{ActiveModelTrait, EntityTrait};
+        let now = Utc::now();
+        match Entity::find_by_id((user_id, article_id)).one(db).await? {
+            Some(existing) => {
+                let new_saved = if existing.saved_at.is_some() {
+                    None
+                } else {
+                    Some(now)
+                };
+                let mut active: ActiveModel = existing.into();
+                active.saved_at = Set(new_saved);
+                active.updated_at = Set(now);
+                active.update(db).await?;
+                Ok(new_saved)
+            }
+            None => {
+                ActiveModel {
+                    user_id: Set(user_id),
+                    article_id: Set(article_id),
+                    saved_at: Set(Some(now)),
+                    ..Default::default()
+                }
+                .insert(db)
+                .await?;
+                Ok(Some(now))
             }
         }
     }

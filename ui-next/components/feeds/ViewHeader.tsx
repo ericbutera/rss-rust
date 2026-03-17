@@ -2,6 +2,8 @@
 
 import type { FeedResponse } from "@/lib/queries";
 import {
+  faBookmark,
+  faChartLine,
   faCircleCheck,
   faClockRotateLeft,
   faGear,
@@ -14,6 +16,9 @@ interface NavProps {
   onShowHistory: () => void;
   onMarkAllRead: () => void;
   onUnsubscribe: () => void;
+  onShowReadHistory?: () => void;
+  onlySaved?: boolean;
+  onToggleSaved?: () => void;
 }
 
 export default function ViewHeader({
@@ -21,6 +26,9 @@ export default function ViewHeader({
   onShowHistory,
   onMarkAllRead,
   onUnsubscribe,
+  onShowReadHistory,
+  onlySaved,
+  onToggleSaved,
 }: NavProps) {
   return (
     <div className="navbar bg-base-100 px-4">
@@ -31,6 +39,36 @@ export default function ViewHeader({
 
       {/* Right side: Actions */}
       <div className="flex-none flex items-center gap-1">
+        {/* Saved filter toggle */}
+        {onToggleSaved !== undefined && (
+          <div
+            className="tooltip tooltip-bottom"
+            data-tip={onlySaved ? "Show all articles" : "Show saved only"}
+          >
+            <button
+              className={`btn btn-sm btn-circle ${
+                onlySaved ? "btn-primary" : "btn-ghost"
+              }`}
+              onClick={onToggleSaved}
+            >
+              <FontAwesomeIcon icon={faBookmark} />
+            </button>
+          </div>
+        )}
+
+        {/*
+        TODO feed stats - history, views over time with graph
+        <div className="tooltip tooltip-bottom" data-tip="Reading history">
+          <button
+            className="btn btn-ghost btn-sm btn-circle"
+            onClick={onShowReadHistory}
+            disabled={!onShowReadHistory}
+          >
+            <FontAwesomeIcon icon={faChartLine} />
+          </button>
+        </div>
+        */}
+
         {/* Mark All Read Button */}
         <div className="tooltip tooltip-bottom" data-tip="Mark all read">
           <button

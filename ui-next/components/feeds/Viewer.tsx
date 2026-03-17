@@ -36,6 +36,8 @@ export default function Viewer({
   onToggleArticle,
   onUnsubscribed,
 }: ViewerProps) {
+  const [onlySaved, setOnlySaved] = useState(false);
+
   const {
     data,
     isLoading,
@@ -43,7 +45,7 @@ export default function Viewer({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useFeedArticles(feed.id);
+  } = useFeedArticles(feed.id, onlySaved);
 
   const { mutate: markArticleRead } = useMarkArticleRead();
   const { mutate: markFeedRead } = useMarkFeedRead();
@@ -116,6 +118,8 @@ export default function Viewer({
         onShowHistory={() => setShowHistory(true)}
         onMarkAllRead={handleMarkAllRead}
         onUnsubscribe={handleUnsubscribe}
+        onlySaved={onlySaved}
+        onToggleSaved={() => setOnlySaved((v) => !v)}
       />
 
       <div className="flex flex-col flex-1">
@@ -130,11 +134,14 @@ export default function Viewer({
           </div>
         )}
         {!isLoading && !isError && articles.length === 0 && (
-          <div className="text-center opacity-50 py-16">No articles yet.</div>
+          <div className="text-center opacity-50 py-16">
+            {onlySaved ? "No saved articles in this feed." : "No articles yet."}
+          </div>
         )}
 
         <ArticleList
           articles={articles}
+          feedId={feed.id}
           openArticleId={openArticleId}
           toggleArticle={toggleArticle}
           lastReadAt={feed.last_read_at}
