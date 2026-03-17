@@ -66,6 +66,8 @@ services:
     volumes:
       - ./ui-next:/app
       - ../kaleido:/app/kaleido:ro
+      - ui_next_node_modules:/app/node_modules
 
 volumes:
   postgres_data:
+  ui_next_node_modules:
