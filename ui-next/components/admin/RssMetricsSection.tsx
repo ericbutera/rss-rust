@@ -38,7 +38,6 @@ function formatBytes(bytes?: number) {
 }
 
 function formatValue(stat: NamedStat): string {
-  if (stat.error) return `Error: ${stat.error}`;
   if (stat.key === "content_size_last_30d") return formatBytes(stat.value);
   return stat.value.toLocaleString();
 }
@@ -60,6 +59,7 @@ export default function RssMetricsSection({
             title={stat.label}
             value={formatValue(stat)}
             desc={stat.desc}
+            error={stat.error}
           />
         ))}
       </div>
