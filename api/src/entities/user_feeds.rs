@@ -14,6 +14,7 @@ pub struct Model {
     pub feed_id: i32,
     pub all_articles_read_at: Option<DateTime<Utc>>,
     pub unread_count: i32,
+    pub sort_order: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -50,11 +51,12 @@ impl ActiveModelBehavior for ActiveModel {
 }
 
 impl Model {
-    /// All feed subscriptions for a user.
+    /// All feed subscriptions for a user, ordered by sort_order.
     pub async fn for_user(db: &impl ConnectionTrait, user_id: i32) -> Result<Vec<Self>, DbErr> {
-        use sea_orm::{EntityTrait, QueryFilter};
+        use sea_orm::{EntityTrait, QueryFilter, QueryOrder};
         Entity::find()
             .filter(Column::UserId.eq(user_id))
+            .order_by_asc(Column::SortOrder)
             .all(db)
             .await
     }
@@ -75,7 +77,13 @@ impl Model {
         user_id: i32,
         feed_id: i32,
     ) -> Result<Self, DbErr> {
+        use sea_orm::{EntityTrait, QueryFilter};
         let existing_count = crate::entities::articles::Model::unread_count(db, feed_id, None)
+            .await
+            .unwrap_or(0) as i32;
+        let sort_order = Entity::find()
+            .filter(Column::UserId.eq(user_id))
+            .count(db)
             .await
             .unwrap_or(0) as i32;
         ActiveModel {
@@ -83,6 +91,7 @@ impl Model {
             feed_id: Set(feed_id),
             all_articles_read_at: Set(None),
             unread_count: Set(existing_count),
+            sort_order: Set(sort_order),
             ..Default::default()
         }
         .insert(db)

@@ -1,15 +1,15 @@
 use crate::app_error::AppError;
 use crate::entities::{articles, feeds, fetch_history, user_articles, user_feeds};
 use crate::storage::AppStorage;
-use kaleido::auth::UserContext;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     routing::{delete, get, post, put},
     Json, Router,
 };
+use kaleido::auth::UserContext;
 use kaleido::glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -59,6 +59,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
     Router::new()
         .route("/feeds", get(list_feeds))
         .route("/feeds", post(create_feed))
+        .route("/feeds/reorder", put(reorder_feeds))
         .route("/feeds/:id", delete(unsubscribe_feed))
         .route("/feeds/:id/articles", get(list_articles))
         .route("/feeds/:id/read", put(mark_feed_read))
@@ -93,6 +94,14 @@ pub struct FeedResponse {
     pub last_fetched_at: Option<chrono::DateTime<chrono::Utc>>,
     /// Number of unread articles (articles created after last_read_at, or all if never read)
     pub unread_count: u64,
+    /// User-defined sort order for drag-and-drop ordering
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ReorderFeedItem {
+    pub feed_id: i32,
+    pub sort_order: i32,
 }
 
 impl FeedResponse {
@@ -102,6 +111,7 @@ impl FeedResponse {
         subscribed_at: chrono::DateTime<chrono::Utc>,
         last_fetched_at: Option<chrono::DateTime<chrono::Utc>>,
         unread_count: u64,
+        sort_order: i32,
     ) -> Self {
         FeedResponse {
             id: m.id,
@@ -114,6 +124,7 @@ impl FeedResponse {
             subscribed_at,
             last_fetched_at,
             unread_count,
+            sort_order,
         }
     }
 }
@@ -239,6 +250,10 @@ pub async fn list_feeds(
         .iter()
         .map(|uf| (uf.feed_id, uf.unread_count))
         .collect();
+    let sort_order_map: HashMap<i32, i32> = user_feed_rows
+        .iter()
+        .map(|uf| (uf.feed_id, uf.sort_order))
+        .collect();
     let feed_ids: Vec<i32> = user_feed_rows.into_iter().map(|uf| uf.feed_id).collect();
 
     let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids)
@@ -247,7 +262,7 @@ pub async fn list_feeds(
 
     let feed_list = feeds::Model::find_active_by_ids(db, feed_ids).await?;
 
-    let responses: Vec<FeedResponse> = feed_list
+    let mut responses: Vec<FeedResponse> = feed_list
         .into_iter()
         .map(|f| {
             let last_read_at = read_map.get(&f.id).copied().flatten();
@@ -257,15 +272,18 @@ pub async fn list_feeds(
                 .unwrap_or_else(chrono::Utc::now);
             let last_fetched_at = last_fetch_map.get(&f.id).copied();
             let unread_count = unread_map.get(&f.id).copied().unwrap_or(0).max(0) as u64;
+            let sort_order = sort_order_map.get(&f.id).copied().unwrap_or(0);
             FeedResponse::from_model(
                 f,
                 last_read_at,
                 subscribed_at,
                 last_fetched_at,
                 unread_count,
+                sort_order,
             )
         })
         .collect();
+    responses.sort_by_key(|r| r.sort_order);
 
     Ok(Json(responses))
 }
@@ -346,7 +364,7 @@ pub async fn create_feed(
     Ok((
         StatusCode::CREATED,
         Json(CreateFeedResponse {
-            feed: FeedResponse::from_model(feed, None, chrono::Utc::now(), None, 0),
+            feed: FeedResponse::from_model(feed, None, chrono::Utc::now(), None, 0, 0),
             task_id,
         }),
     ))
@@ -617,4 +635,35 @@ pub async fn list_fetch_history(
         .map(FetchHistoryResponse::from_model);
 
     Ok(Json(paginated))
+}
+
+/// Update sort order for the current user's feed subscriptions
+#[utoipa::path(
+    put,
+    path = "/feeds/reorder",
+    request_body = Vec<ReorderFeedItem>,
+    responses(
+        (status = 204, description = "Sort order updated"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn reorder_feeds(
+    State(state): State<Arc<AppStorage>>,
+    user_ctx: UserContext<AppStorage>,
+    Json(items): Json<Vec<ReorderFeedItem>>,
+) -> Result<StatusCode, AppError> {
+    let db = &state.db;
+    let user_id = user_ctx.user.id;
+
+    for item in items {
+        if let Some(row) = user_feeds::Model::find_subscription(db, user_id, item.feed_id).await? {
+            let mut active: user_feeds::ActiveModel = row.into();
+            active.sort_order = Set(item.sort_order);
+            active.update(db).await?;
+        }
+    }
+
+    Ok(StatusCode::NO_CONTENT)
 }

@@ -95,6 +95,20 @@ export function useUnsubscribeFeed() {
   };
 }
 
+export function useReorderFeeds() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/feeds/reorder");
+  return {
+    ...mutation,
+    mutateAsync: async (
+      items: { feed_id: number; sort_order: number }[],
+    ): Promise<void> => {
+      await mutation.mutateAsync({ body: items });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+    },
+  };
+}
+
 export function useMarkArticleRead() {
   const queryClient = useQueryClient();
   const mutation = $api.useMutation("put", "/articles/{id}/read");

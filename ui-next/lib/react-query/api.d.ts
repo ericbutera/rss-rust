@@ -406,6 +406,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/feeds/reorder": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update sort order for the current user's feed subscriptions */
+    put: operations["reorder_feeds"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/feeds/tasks/{task_id}": {
     parameters: {
       query?: never;
@@ -677,6 +694,11 @@ export interface components {
       url: string;
       /** Format: date-time */
       verified_at?: string | null;
+      /**
+       * Format: int32
+       * @description User-defined sort order for drag-and-drop ordering
+       */
+      sort_order: number;
     };
     FetchHistoryResponse: {
       /** Format: int32 */
@@ -714,6 +736,12 @@ export interface components {
     };
     MessageResponse: {
       message: string;
+    };
+    ReorderFeedItem: {
+      /** Format: int32 */
+      feed_id: number;
+      /** Format: int32 */
+      sort_order: number;
     };
     /** @description Standard paginated response wrapper */
     PaginatedResponse_ArticleResponse: {
@@ -1608,6 +1636,35 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["FeedResponse"][];
         };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  reorder_feeds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReorderFeedItem"][];
+      };
+    };
+    responses: {
+      /** @description Sort order updated */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Unauthorized */
       401: {

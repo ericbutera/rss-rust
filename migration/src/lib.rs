@@ -5,6 +5,7 @@ mod m20260307_120000_init;
 mod m20260309_000000_add_unread_count_to_user_feeds;
 mod m20260309_100000_add_fetch_history_fields;
 mod m20260310_000000_add_fetch_interval_to_feeds;
+mod m20260310_100000_add_sort_order_to_user_feeds;
 
 pub struct Migrator;
 
@@ -26,6 +27,9 @@ impl MigratorTrait for Migrator {
         ));
         locals.push(Box::new(
             m20260310_000000_add_fetch_interval_to_feeds::Migration,
+        ));
+        locals.push(Box::new(
+            m20260310_100000_add_sort_order_to_user_feeds::Migration,
         ));
 
         locals.sort_by_key(|m| m.name().to_string());
