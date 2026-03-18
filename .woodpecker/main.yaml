@@ -4,10 +4,33 @@ when:
   - event: manual
 
 steps:
+  # Clone kaleido alongside the workspace so cargo uses the local [patch] path
+  # in Cargo.toml rather than fetching from GitHub during the build.
+  - name: clone-kaleido
+    image: alpine/git
+    commands:
+      - sh .woodpecker/clone-kaleido.sh
+
+  # Rust unit tests (uses local kaleido path, no network calls from cargo)
+  - name: test-rust
+    image: rust:1-bookworm
+    depends_on: [clone-kaleido]
+    environment:
+      TEST_MODE: "1"
+    commands:
+      - sh .woodpecker/test-rust.sh
+
+  # TypeScript type-check for ui-next (runs in parallel with Rust tests)
+  - name: test-ui
+    image: node:25-alpine
+    commands:
+      - sh .woodpecker/test-ui.sh
+
   # Builds are serialized (api → worker → ui) to avoid concurrent Kaniko
   # processes exhausting server RAM. Kaniko --cache keeps rebuilds fast.
   - name: build-api
     image: woodpeckerci/plugin-kaniko
+    depends_on: [test-rust, test-ui]
     settings:
       registry: registry.container-registry:5000
       repo: rss-api

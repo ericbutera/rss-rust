@@ -35,7 +35,7 @@ export type StatResult = { value: number; error?: string | null };
 
 export function useFeeds() {
   const resp = $api.useQuery("get", "/feeds", {});
-  return { ...resp, data: resp.data ?? [] };
+  return { ...resp, data: (resp.data ?? []) as FeedResponse[] };
 }
 
 export function useFeedArticles(feedId: number | null, onlySaved = false) {
@@ -173,7 +173,7 @@ export function useTaskStatus(taskId: string | null) {
     {
       enabled: taskId !== null && taskId !== "",
       // Poll every 2 seconds until the task reaches a terminal state
-      refetchInterval: (query) => {
+      refetchInterval: (query: { state: { data: unknown } }) => {
         const status = (query.state.data as TaskStatusResponse | undefined)
           ?.status;
         return status === "completed" || status === "failed" ? false : 2000;
