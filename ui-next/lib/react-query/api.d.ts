@@ -4,40 +4,6 @@
  */
 
 export interface paths {
-  "/admin/metrics": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get glass-managed system metrics (auth, background tasks, etc.) */
-    get: operations["admin_get_metrics"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/metrics/app": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get RSS-specific app metrics */
-    get: operations["admin_app_metrics"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/admin/feature-flags": {
     parameters: {
       query?: never;
@@ -140,14 +106,18 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/admin/tasks/": {
+  "/admin/metrics": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    get: operations["admin_list_tasks"];
+    /**
+     * Get glass-managed system metrics (auth, background tasks, etc.)
+     * @description Glass automatically expands this response as new subsystems are added.
+     */
+    get: operations["admin_get_metrics"];
     put?: never;
     post?: never;
     delete?: never;
@@ -156,16 +126,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/admin/tasks/{id}": {
+  "/admin/metrics/app": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    get: operations["admin_get_task"];
+    /** Get RSS-specific app metrics. */
+    get: operations["admin_app_metrics"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/tasks/fetch-missing-favicons": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Enqueue a background task to fetch favicons for all feeds that have never had one fetched.
+     * @description The worker deduplicates by marking `favicon_fetched_at` before starting each fetch,
+     *     so running this multiple times is safe — subsequent enqueues will simply find no work.
+     */
+    post: operations["fetch_missing_favicons"];
     delete?: never;
     options?: never;
     head?: never;
@@ -235,7 +227,7 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    /** Toggle saved state for an article */
+    /** Toggle saved state for an article (save if unsaved, unsave if saved) */
     put: operations["toggle_save_article"];
     post?: never;
     delete?: never;
@@ -474,23 +466,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/feeds/{id}/name": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Set a custom display name for a feed subscription */
-    put: operations["rename_feed"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/feeds/{id}/articles": {
     parameters: {
       query?: never;
@@ -518,6 +493,23 @@ export interface paths {
     /** List fetch history for a feed */
     get: operations["list_fetch_history"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/feeds/{id}/name": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Set a custom display name for a feed subscription (persisted on user_feeds) */
+    put: operations["rename_feed"];
     post?: never;
     delete?: never;
     options?: never;
@@ -580,32 +572,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    AdminAggregatesResponse: {
-      /** Auth metrics provided by glass. */
-      auth: components["schemas"]["NamedStat"][];
-      /** RSS-specific metrics. */
-      app: components["schemas"]["NamedStat"][];
-    };
-    SystemMetrics: {
-      /** Glass-managed auth metrics. */
-      auth: components["schemas"]["NamedStat"][];
-    };
-    NamedStat: {
-      /** Machine-readable identifier. */
-      key: string;
-      /** Human-readable display label. */
-      label: string;
-      /** Short time-range description, e.g. "last 30 days". */
-      desc: string;
-      /** @format int64 */
-      value: number;
-      error?: string | null;
-    };
-    StatResult: {
-      /** Format: int64 */
-      value: number;
-      error?: string | null;
-    };
     AdminFeedResponse: {
       /** Format: int64 */
       article_count: number;
@@ -618,9 +584,9 @@ export interface components {
       id: number;
       /** Format: date-time */
       last_fetched_at?: string | null;
+      name?: string | null;
       /** Format: date-time */
       next_fetch_at?: string | null;
-      name?: string | null;
       /** Format: date-time */
       updated_at: string;
       url: string;
@@ -631,30 +597,6 @@ export interface components {
       enabled?: boolean | null;
       /** Format: int32 */
       fetch_interval_minutes?: number | null;
-    };
-    AdminTaskResponse: {
-      /** Format: int32 */
-      id: number;
-      task_type: string;
-      status: string;
-      /** Format: int32 */
-      attempts: number;
-      /** Format: int32 */
-      max_attempts: number;
-      error?: string | null;
-      result?: string | null;
-      created_at: string;
-      updated_at: string;
-      scheduled_for?: string | null;
-      started_at?: string | null;
-      completed_at?: string | null;
-    };
-    AdminTaskListResponse: {
-      data: components["schemas"]["AdminTaskResponse"][];
-      total: number;
-      page: number;
-      per_page: number;
-      total_pages: number;
     };
     ArticleResponse: {
       content?: string | null;
@@ -668,15 +610,9 @@ export interface components {
       id: number;
       image_url?: string | null;
       preview?: string | null;
-      /**
-       * Format: date-time
-       * @description When the current user read this article (None = unread)
-       */
+      /** Format: date-time */
       read_at?: string | null;
-      /**
-       * Format: date-time
-       * @description When the current user saved this article (None = not saved)
-       */
+      /** Format: date-time */
       saved_at?: string | null;
       title?: string | null;
       /** Format: date-time */
@@ -686,10 +622,6 @@ export interface components {
     CreateFeedRequest: {
       name?: string | null;
       url: string;
-    };
-    UpdateFeedNameRequest: {
-      /** @description New display name. Pass `null` to clear the override and fall back to the feed's default name. */
-      name?: string | null;
     };
     /** @description Response returned when a new feed subscription is created. */
     CreateFeedResponse: {
@@ -701,6 +633,10 @@ export interface components {
        */
       task_id?: string | null;
     };
+    FaviconTaskResponse: {
+      message: string;
+      task_id: string;
+    };
     FeatureFlagResponse: {
       description?: string | null;
       enabled: boolean;
@@ -709,6 +645,8 @@ export interface components {
     FeedResponse: {
       /** Format: date-time */
       created_at: string;
+      /** @description API path to the feed's favicon (e.g. /api/favicons/feed_1.ico), or null if unavailable */
+      favicon_url?: string | null;
       /** Format: int32 */
       id: number;
       /**
@@ -721,7 +659,13 @@ export interface components {
        * @description When the user last marked all articles in this feed as read
        */
       last_read_at?: string | null;
+      /** @description Display name: user's override if set, otherwise the feed's own title. */
       name?: string | null;
+      /**
+       * Format: int32
+       * @description User-defined sort order for drag-and-drop ordering
+       */
+      sort_order: number;
       /**
        * Format: date-time
        * @description When the current user subscribed to this feed
@@ -737,11 +681,6 @@ export interface components {
       url: string;
       /** Format: date-time */
       verified_at?: string | null;
-      /**
-       * Format: int32
-       * @description User-defined sort order for drag-and-drop ordering
-       */
-      sort_order: number;
     };
     FetchHistoryResponse: {
       /** Format: int32 */
@@ -758,6 +697,10 @@ export interface components {
       /** Format: int32 */
       status_code?: number | null;
     };
+    FetchNowResponse: {
+      message: string;
+      task_id: string;
+    };
     FixDriftResponse: {
       message: string;
       /**
@@ -765,10 +708,6 @@ export interface components {
        * @description Number of user_feed rows whose unread_count was recalculated
        */
       rows_updated: number;
-    };
-    FetchNowResponse: {
-      message: string;
-      task_id: string;
     };
     ForgotPasswordRequest: {
       email: string;
@@ -786,6 +725,21 @@ export interface components {
       /** Format: int32 */
       sort_order: number;
     };
+    /**
+     * @description A named, displayable metric with a machine-readable key and human-readable label.
+     *     Used in sectioned admin metrics responses so the UI can map keys to icons/links.
+     */
+    NamedStat: {
+      /** @description Short time-range description, e.g. "last 30 days". */
+      desc: string;
+      error?: string | null;
+      /** @description Machine-readable identifier — used by the UI to look up icons and links. */
+      key: string;
+      /** @description Human-readable display label. */
+      label: string;
+      /** Format: int64 */
+      value: number;
+    };
     /** @description Standard paginated response wrapper */
     PaginatedResponse_ArticleResponse: {
       /** @description Recordset */
@@ -801,15 +755,9 @@ export interface components {
         id: number;
         image_url?: string | null;
         preview?: string | null;
-        /**
-         * Format: date-time
-         * @description When the current user read this article (None = unread)
-         */
+        /** Format: date-time */
         read_at?: string | null;
-        /**
-         * Format: date-time
-         * @description When the current user saved this article (None = not saved)
-         */
+        /** Format: date-time */
         saved_at?: string | null;
         title?: string | null;
         /** Format: date-time */
@@ -916,6 +864,18 @@ export interface components {
       password: string;
       token: string;
     };
+    /**
+     * @description System-wide metrics automatically aggregated from all glass subsystems.
+     *
+     *     Add new subsystem fields here (and populate them in `collect`) when new
+     *     system-level metric categories are added to glass. Consuming controllers
+     *     embed this via `#[serde(flatten)]` so new sections appear in the JSON
+     *     response without any controller changes.
+     */
+    SystemMetrics: {
+      auth: components["schemas"]["NamedStat"][];
+      background_tasks: components["schemas"]["NamedStat"][];
+    };
     /** @description Status of a background task (e.g. feed verification). */
     TaskStatusResponse: {
       /** Format: int32 */
@@ -926,6 +886,10 @@ export interface components {
       max_attempts: number;
       /** @description One of: pending, processing, completed, failed */
       status: string;
+    };
+    UpdateFeedNameRequest: {
+      /** @description New display name. Pass `null` to clear the override and fall back to the feed's default name. */
+      name?: string | null;
     };
     UpdateFlagRequest: {
       enabled: boolean;
@@ -946,94 +910,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  admin_get_metrics: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Glass system metrics */
-      200: {
-        headers: { [name: string]: unknown };
-        content: {
-          "application/json": components["schemas"]["SystemMetrics"];
-        };
-      };
-      /** @description Unauthorized */
-      401: { headers: { [name: string]: unknown }; content?: never };
-      /** @description Forbidden */
-      403: { headers: { [name: string]: unknown }; content?: never };
-    };
-  };
-  admin_app_metrics: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description RSS app metrics */
-      200: {
-        headers: { [name: string]: unknown };
-        content: {
-          "application/json": components["schemas"]["NamedStat"][];
-        };
-      };
-      /** @description Unauthorized */
-      401: { headers: { [name: string]: unknown }; content?: never };
-      /** @description Forbidden */
-      403: { headers: { [name: string]: unknown }; content?: never };
-    };
-  };
-  admin_list_tasks: {
-    parameters: {
-      query?: {
-        task_type?: string;
-        status?: string;
-        page?: number;
-        per_page?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: { [name: string]: unknown };
-        content: {
-          "application/json": components["schemas"]["AdminTaskListResponse"];
-        };
-      };
-      401: { headers: { [name: string]: unknown }; content?: never };
-      403: { headers: { [name: string]: unknown }; content?: never };
-    };
-  };
-  admin_get_task: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: { id: number };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: { [name: string]: unknown };
-        content: {
-          "application/json": components["schemas"]["AdminTaskResponse"];
-        };
-      };
-      401: { headers: { [name: string]: unknown }; content?: never };
-      403: { headers: { [name: string]: unknown }; content?: never };
-      404: { headers: { [name: string]: unknown }; content?: never };
-    };
-  };
   list_flags: {
     parameters: {
       query?: never;
@@ -1255,6 +1131,108 @@ export interface operations {
       };
       /** @description Feed not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  admin_get_metrics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Glass system metrics */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SystemMetrics"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  admin_app_metrics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description RSS app metrics */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NamedStat"][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  fetch_missing_favicons: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Task enqueued */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FaviconTaskResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -1731,35 +1709,6 @@ export interface operations {
       };
     };
   };
-  reorder_feeds: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ReorderFeedItem"][];
-      };
-    };
-    responses: {
-      /** @description Sort order updated */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   create_feed: {
     parameters: {
       query?: never;
@@ -1865,18 +1814,15 @@ export interface operations {
   };
   list_articles: {
     parameters: {
-      query?: {
-        /** @description Page number (1-based) */
-        page?: number;
-        /** @description Number of items per page */
-        per_page?: number;
-        /** @description Filter to only saved articles */
-        only_saved?: boolean;
-      };
+      query?: never;
       header?: never;
       path: {
         /** @description Feed ID */
         id: number;
+        /** @description Page number (1-based) */
+        page: number;
+        /** @description Number of items per page */
+        per_page: number;
       };
       cookie?: never;
     };
@@ -1949,36 +1895,28 @@ export interface operations {
       };
     };
   };
-  mark_feed_read: {
+  reorder_feeds: {
     parameters: {
       query?: never;
       header?: never;
-      path: {
-        /** @description Feed ID */
-        id: number;
-      };
+      path?: never;
       cookie?: never;
     };
-    requestBody?: never;
-    responses: {
-      /** @description Feed marked as read */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MessageResponse"];
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReorderFeedItem"][];
       };
-      /** @description Unauthorized */
-      401: {
+    };
+    responses: {
+      /** @description Sort order updated */
+      204: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description Subscription not found */
-      404: {
+      /** @description Unauthorized */
+      401: {
         headers: {
           [name: string]: unknown;
         };
@@ -2019,6 +1957,43 @@ export interface operations {
         content?: never;
       };
       /** @description Feed not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  mark_feed_read: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Feed marked as read */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MessageResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Subscription not found */
       404: {
         headers: {
           [name: string]: unknown;

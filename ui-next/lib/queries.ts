@@ -21,11 +21,15 @@ export type AdminFeed = components["schemas"]["AdminFeedResponse"];
 export type AdminUpdateFeedRequest =
   components["schemas"]["AdminUpdateFeedRequest"];
 export type TaskStatusResponse = components["schemas"]["TaskStatusResponse"];
-export type AdminAggregatesResponse =
-  components["schemas"]["AdminAggregatesResponse"];
+// Historically this was named `AdminAggregatesResponse` in the client
+// generator. The OpenAPI types now expose these metrics as `SystemMetrics`.
+// Keep a compatibility alias so existing code continues to compile.
+export type AdminAggregatesResponse = components["schemas"]["SystemMetrics"];
 export type SystemMetrics = components["schemas"]["SystemMetrics"];
 export type NamedStat = components["schemas"]["NamedStat"];
-export type StatResult = components["schemas"]["StatResult"];
+// `StatResult` was removed from the OpenAPI schema. Define it locally to match
+// the shape expected by kaleido's admin components (value + optional error).
+export type StatResult = { value: number; error?: string | null };
 
 // ── Feed queries ──────────────────────────────────────────────────────────────
 
@@ -243,4 +247,8 @@ export function useInvalidateFeeds() {
 
 export function useFixUnreadDrift() {
   return $api.useMutation("post", "/admin/tasks/fix-unread-drift");
+}
+
+export function useFetchMissingFavicons() {
+  return $api.useMutation("post", "/admin/tasks/fetch-missing-favicons");
 }

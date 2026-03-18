@@ -1,77 +1,129 @@
 "use client";
 
-import { useFixUnreadDrift } from "@/lib/queries";
+import { useFetchMissingFavicons, useFixUnreadDrift } from "@/lib/queries";
 import { useState } from "react";
 
-export default function AdminMaintenancePanel() {
-  const [result, setResult] = useState<{
-    rows_updated: number;
-    message: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+function TaskCard({
+  title,
+  description,
+  detail,
+  buttonLabel,
+  buttonClass,
+  onRun,
+  isPending,
+  result,
+  error,
+}: {
+  title: string;
+  description: string;
+  detail?: string;
+  buttonLabel: string;
+  buttonClass?: string;
+  onRun: () => void;
+  isPending: boolean;
+  result: string | null;
+  error: string | null;
+}) {
+  return (
+    <div className="card card-border">
+      <div className="card-body">
+        <h2 className="card-title">{title}</h2>
+        <p className="text-sm text-base-content/70">{description}</p>
+        {detail && <p className="text-xs text-base-content/50">{detail}</p>}
 
-  const mutation = useFixUnreadDrift();
+        {result && (
+          <div role="alert" className="alert alert-success alert-soft">
+            <span>{result}</span>
+          </div>
+        )}
+
+        {error && (
+          <div role="alert" className="alert alert-error alert-soft">
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="card-actions">
+          <button
+            className={`btn ${buttonClass ?? "btn-warning"}`}
+            onClick={onRun}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <>
+                <span className="loading loading-spinner loading-sm" />
+                Running…
+              </>
+            ) : (
+              buttonLabel
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminMaintenancePanel() {
+  const [driftResult, setDriftResult] = useState<string | null>(null);
+  const [driftError, setDriftError] = useState<string | null>(null);
+  const driftMutation = useFixUnreadDrift();
+
+  const [faviconResult, setFaviconResult] = useState<string | null>(null);
+  const [faviconError, setFaviconError] = useState<string | null>(null);
+  const faviconMutation = useFetchMissingFavicons();
 
   async function runFixDrift() {
-    setResult(null);
-    setError(null);
+    setDriftResult(null);
+    setDriftError(null);
     try {
-      const data = await mutation.mutateAsync({});
-      setResult(data as { rows_updated: number; message: string });
+      const data = await driftMutation.mutateAsync({});
+      const d = data as { rows_updated: number; message: string };
+      setDriftResult(
+        `${d.message} (${d.rows_updated} subscription${d.rows_updated !== 1 ? "s" : ""} updated)`,
+      );
     } catch {
-      setError("Failed to run fix — check server logs.");
+      setDriftError("Failed to run fix — check server logs.");
+    }
+  }
+
+  async function runFetchFavicons() {
+    setFaviconResult(null);
+    setFaviconError(null);
+    try {
+      const data = await faviconMutation.mutateAsync({});
+      const d = data as { message: string; task_id: string };
+      setFaviconResult(`${d.message} (task ${d.task_id})`);
+    } catch {
+      setFaviconError("Failed to enqueue favicon task — check server logs.");
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="card card-border">
-        <div className="card-body">
-          <h2 className="card-title">Fix Unread Count Drift</h2>
-          <p className="text-sm text-base-content/70">
-            Recalculates <code>unread_count</code> for every subscription from
-            ground truth. Run this when unread counts appear incorrect — e.g.
-            showing 0 unread when articles are visibly unread.
-          </p>
-          <p className="text-xs text-base-content/50">
-            Root cause: viewing an article that was covered by a bulk &quot;mark
-            all as read&quot; can spuriously decrement the counter, eventually
-            zeroing out counts for genuinely new articles.
-          </p>
+      <TaskCard
+        title="Fix Unread Count Drift"
+        description={`Recalculates unread_count for every subscription from ground truth. Run this when unread counts appear incorrect — e.g. showing 0 unread when articles are visibly unread.`}
+        detail={`Root cause: viewing an article that was covered by a bulk "mark all as read" can spuriously decrement the counter, eventually zeroing out counts for genuinely new articles.`}
+        buttonLabel="Run Now"
+        buttonClass="btn-warning"
+        onRun={runFixDrift}
+        isPending={driftMutation.isPending}
+        result={driftResult}
+        error={driftError}
+      />
 
-          {result && (
-            <div role="alert" className="alert alert-success alert-soft">
-              <span>
-                {result.message} ({result.rows_updated} subscription
-                {result.rows_updated !== 1 ? "s" : ""} updated)
-              </span>
-            </div>
-          )}
-
-          {error && (
-            <div role="alert" className="alert alert-error alert-soft">
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="card-actions">
-            <button
-              className="btn btn-warning"
-              onClick={runFixDrift}
-              disabled={mutation.isPending}
-            >
-              {mutation.isPending ? (
-                <>
-                  <span className="loading loading-spinner loading-sm" />
-                  Running…
-                </>
-              ) : (
-                "Run Now"
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+      <TaskCard
+        title="Fetch Missing Favicons"
+        description="Enqueues a background task that fetches /favicon.ico for every feed that has never had a favicon attempt. The worker processes one feed at a time and marks each as attempted before fetching, preventing duplicate requests."
+        detail="Favicons are stored on the shared assets volume and served at /api/favicons/:filename. Re-running this task is safe — feeds already attempted will be skipped."
+        buttonLabel="Enqueue Task"
+        buttonClass="btn-info"
+        onRun={runFetchFavicons}
+        isPending={faviconMutation.isPending}
+        result={faviconResult}
+        error={faviconError}
+      />
     </div>
   );
 }

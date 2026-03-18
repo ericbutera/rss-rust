@@ -9,6 +9,7 @@ mod m20260310_100000_add_sort_order_to_user_feeds;
 mod m20260317_000000_add_saved_at_to_user_articles;
 mod m20260317_100000_add_feed_discovery_fields;
 mod m20260317_200000_add_name_override_to_user_feeds;
+mod m20260318_000000_add_favicon_to_feeds;
 
 pub struct Migrator;
 
@@ -42,6 +43,9 @@ impl MigratorTrait for Migrator {
         ));
         locals.push(Box::new(
             m20260317_200000_add_name_override_to_user_feeds::Migration,
+        ));
+        locals.push(Box::new(
+            m20260318_000000_add_favicon_to_feeds::Migration,
         ));
 
         locals.sort_by_key(|m| m.name().to_string());

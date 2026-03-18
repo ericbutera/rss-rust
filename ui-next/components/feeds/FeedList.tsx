@@ -1,6 +1,8 @@
 "use client";
 
+import { API_URL } from "@/lib/config";
 import { useFeeds, useReorderFeeds, type FeedResponse } from "@/lib/queries";
+import type { Verifications } from "@/lib/usePendingVerifications";
 import {
   DndContext,
   PointerSensor,
@@ -24,8 +26,6 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useCallback, useState } from "react";
 import VerificationIndicator from "./VerificationIndicator";
-
-import type { Verifications } from "@/lib/usePendingVerifications";
 
 interface FeedListProps {
   selectedFeed: FeedResponse | null;
@@ -96,10 +96,29 @@ function SortableFeedItem({
         >
           <FontAwesomeIcon icon={faGripVertical} className="text-xs" />
         </button>
-        <FontAwesomeIcon
-          icon={faRss}
-          className={`shrink-0 ${hasUnread ? "text-primary" : "opacity-60"}`}
-        />
+        {feed.favicon_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`${API_URL}/favicons/${feed.favicon_url}`}
+            alt=""
+            width={14}
+            height={14}
+            className={`shrink-0 w-3.5 h-3.5 ${hasUnread ? "" : "opacity-60"}`}
+            onError={(e) => {
+              // If the image fails to load, swap in the RSS icon fallback.
+              const el = e.currentTarget;
+              el.style.display = "none";
+              const icon = el.nextElementSibling as HTMLElement | null;
+              if (icon) icon.style.display = "inline-block";
+            }}
+          />
+        ) : (
+          <FontAwesomeIcon
+            icon={faRss}
+            className={`shrink-0 ${hasUnread ? "text-primary" : "opacity-60"}${feed.favicon_url ? " hidden" : ""}`}
+          />
+        )}
+
         <div className="overflow-hidden min-w-0 flex-1">
           <span className="whitespace-nowrap block">{label}</span>
         </div>

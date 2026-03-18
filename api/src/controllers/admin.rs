@@ -22,6 +22,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds/:id/fetch-history", get(list_feed_fetch_history))
         .route("/feeds/:id/fetch-now", post(fetch_feed_now))
         .route("/tasks/fix-unread-drift", post(fix_unread_drift))
+        .route("/tasks/fetch-missing-favicons", post(fetch_missing_favicons))
 }
 
 /// Get RSS-specific app metrics.
@@ -338,6 +339,12 @@ pub struct FixDriftResponse {
     pub message: String,
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FaviconTaskResponse {
+    pub message: String,
+    pub task_id: String,
+}
+
 /// Recalculate unread_count for all user_feed subscriptions from ground truth.
 ///
 /// This corrects drift that can accumulate when articles are viewed after a bulk
@@ -364,5 +371,38 @@ async fn fix_unread_drift(
             "Recalculated unread counts for {} subscriptions",
             rows_updated
         ),
+    }))
+}
+
+/// Enqueue a background task to fetch favicons for all feeds that have never had one fetched.
+///
+/// The worker deduplicates by marking `favicon_fetched_at` before starting each fetch,
+/// so running this multiple times is safe — subsequent enqueues will simply find no work.
+#[utoipa::path(
+    post,
+    path = "/admin/tasks/fetch-missing-favicons",
+    responses(
+        (status = 200, description = "Task enqueued", body = FaviconTaskResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden"),
+    ),
+    security(("Bearer" = [])),
+    tag = "admin"
+)]
+async fn fetch_missing_favicons(
+    _admin: AdminUserContext<AppStorage>,
+    State(state): State<Arc<AppStorage>>,
+) -> Result<Json<FaviconTaskResponse>, AppError> {
+    let task = state
+        .tasks
+        .inner()
+        .enqueue("favicon_fetcher".to_string(), serde_json::json!({}))
+        .await
+        .map_err(|e| AppError::internal_error(format!("Failed to enqueue favicon task: {e}")))?;
+
+    Ok(Json(FaviconTaskResponse {
+        message: "Favicon fetch task enqueued — worker will process feeds with missing favicons"
+            .to_string(),
+        task_id: task.id,
     }))
 }

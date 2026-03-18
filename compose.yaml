@@ -26,6 +26,7 @@ services:
       SMTP_PORT: 1025
       MAIL_FROM: noreply@rss.local
       SMTP_FROM_NAME: rss
+      ASSETS_PATH: /data/assets
     depends_on:
       - postgres
     ports:
@@ -33,6 +34,7 @@ services:
     volumes:
       - .:/app
       - ../kaleido:/kaleido:ro
+      - rss_assets:/data/assets
 
   worker:
     build:
@@ -47,12 +49,14 @@ services:
       MAIL_FROM: noreply@rss.local
       SMTP_FROM_NAME: rss
       OLLAMA_URL: http://ollama:11434
+      ASSETS_PATH: /data/assets
     depends_on:
       - postgres
       - ollama
     volumes:
       - .:/app
       - ../kaleido:/kaleido:ro
+      - rss_assets:/data/assets
 
   ollama:
     image: ollama/ollama:latest
@@ -79,15 +83,15 @@ services:
       - ../kaleido:/app/kaleido:ro
       - ui_next_node_modules:/app/node_modules
 
-  fake-feeds:
-    image: nginx:alpine
-    volumes:
-      - ./fake-feeds:/usr/share/nginx/html:ro
-    ports:
-      - '8099:80'
-    restart: never
+  # fake-feeds:
+  #   image: nginx:alpine
+  #   volumes:
+  #     - ./fake-feeds:/usr/share/nginx/html:ro
+  #   ports:
+  #     - '8099:80'
 
 volumes:
   postgres_data:
   ui_next_node_modules:
   ollama_data:
+  rss_assets:

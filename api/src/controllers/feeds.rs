@@ -99,6 +99,8 @@ pub struct FeedResponse {
     pub unread_count: u64,
     /// User-defined sort order for drag-and-drop ordering
     pub sort_order: i32,
+    /// API path to the feed's favicon (e.g. /api/favicons/feed_1.ico), or null if unavailable
+    pub favicon_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -135,6 +137,7 @@ impl FeedResponse {
             last_fetched_at,
             unread_count,
             sort_order,
+            favicon_url: m.favicon_url,
         }
     }
 }
@@ -459,7 +462,6 @@ pub async fn rename_feed(
         uf.name_override,
     )))
 }
-
 
 /// Get the status of a background task (e.g. feed verification)
 #[utoipa::path(

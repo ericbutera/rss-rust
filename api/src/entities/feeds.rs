@@ -23,6 +23,11 @@ pub struct Model {
     pub feed_type: String,
     /// Original page URL entered by the user; populated by FeedDiscovery
     pub source_url: Option<String>,
+    /// API path where the fetched favicon is served (e.g. /api/favicons/feed_1.ico)
+    pub favicon_url: Option<String>,
+    /// When a favicon fetch was last attempted. NULL = never tried.
+    /// Set BEFORE the fetch attempt to act as a soft lock against concurrent fetches.
+    pub favicon_fetched_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -122,6 +127,16 @@ impl Model {
         }
         .insert(db)
         .await
+    }
+
+    /// All active feeds for which no favicon fetch has been attempted yet.
+    pub async fn find_needs_favicon_fetch(db: &impl ConnectionTrait) -> Result<Vec<Self>, DbErr> {
+        use sea_orm::{EntityTrait, QueryFilter};
+        Entity::find()
+            .filter(Column::DeactivatedAt.is_null())
+            .filter(Column::FaviconFetchedAt.is_null())
+            .all(db)
+            .await
     }
 
     /// Returns true if this feed has been deactivated.

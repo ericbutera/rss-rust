@@ -15,6 +15,9 @@ pub struct Config {
     pub smtp_password: Option<String>,
     pub smtp_from_email: String,
     pub smtp_from_name: String,
+    /// Root directory for PVC-backed assets (favicons, etc.).
+    /// Served under /api/favicons/:filename; written by the worker.
+    pub assets_path: String,
 }
 
 static CONFIG: OnceCell<Config> = OnceCell::new();
@@ -47,6 +50,7 @@ impl Config {
             smtp_from_email: env::var("MAIL_FROM")
                 .unwrap_or_else(|_| "noreply@app.local".to_string()),
             smtp_from_name: env::var("SMTP_FROM_NAME").unwrap_or_else(|_| "App".to_string()),
+            assets_path: env::var("ASSETS_PATH").unwrap_or_else(|_| "/tmp/rss-assets".to_string()),
         };
 
         CONFIG.get_or_init(|| cfg)

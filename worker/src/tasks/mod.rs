@@ -41,6 +41,7 @@ pub async fn register_default_processors(
     let single_fetcher = Arc::new(SingleFeedFetcher::new(db.clone()));
     let feed_discovery = Arc::new(FeedDiscovery::new(db.clone()));
     let page_extractor = Arc::new(PageExtractor::new(db.clone()));
+    let favicon_fetcher = Arc::new(FaviconFetcher::new(db.clone()));
 
     // Spawn the cron scheduler so feed_fetcher tasks are enqueued on schedule
     let db_for_scheduler = (*db).clone();
@@ -61,5 +62,6 @@ pub async fn register_default_processors(
         .register_processor(verifier)
         .register_processor(single_fetcher)
         .register_processor(feed_discovery)
-        .register_processor(page_extractor))
+        .register_processor(page_extractor)
+        .register_processor(favicon_fetcher))
 }

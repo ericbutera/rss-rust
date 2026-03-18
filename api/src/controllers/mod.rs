@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod assets;
 pub mod feeds;
 
 use crate::storage::AppStorage;
@@ -25,6 +26,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .nest("/api/admin/metrics", metrics_controller::admin_routes::<AppStorage>())
         .nest("/api", feeds::routes())
         .nest("/api/admin", admin::routes())
+        .route("/api/favicons/:filename", get(assets::get_favicon))
         .route("/api/health", get(health))
         .route("/", get(root))
 }
