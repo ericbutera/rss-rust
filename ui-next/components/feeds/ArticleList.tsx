@@ -308,9 +308,11 @@ export default function ArticleList({
                     <span className="text-xs opacity-40">
                       {relativeTime(article.created_at)}
                     </span>
-                    <FeedLabel feed={articleFeed} />
+                    <span className="ml-auto">
+                      <FeedLabel feed={articleFeed} />
+                    </span>
                     <button
-                      className={`btn btn-ghost btn-xs btn-circle ml-auto ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
+                      className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleSave(article.id, feedId ?? article.feed_id);

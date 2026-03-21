@@ -4,25 +4,8 @@ when:
       exclude: main
 
 steps:
-  - name: clone-kaleido
-    image: alpine/git
-    when:
-      - event: push
-        path:
-          include:
-            - "api/**"
-            - "worker/**"
-            - "migration/**"
-            - "Cargo.toml"
-            - "Cargo.lock"
-            - ".woodpecker/clone-kaleido.sh"
-            - ".woodpecker/test-rust.sh"
-    commands:
-      - sh .woodpecker/clone-kaleido.sh
-
   - name: test-rust
     image: rust:1-bookworm
-    depends_on: [clone-kaleido]
     when:
       - event: push
         path:
@@ -37,6 +20,7 @@ steps:
     environment:
       TEST_MODE: "1"
     commands:
+      - sh .woodpecker/clone-kaleido.sh
       - sh .woodpecker/test-rust.sh
 
   - name: test-ui

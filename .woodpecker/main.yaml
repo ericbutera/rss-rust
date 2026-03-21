@@ -9,30 +9,11 @@ when:
 #   ui:   ui-next/**, .woodpecker/test-ui.sh
 
 steps:
-  # Clone kaleido alongside the workspace so cargo uses the local [patch] path
-  # in Cargo.toml rather than fetching from GitHub during the build.
-  - name: clone-kaleido
-    image: alpine/git
-    when:
-      - event: push
-        branch: main
-        path:
-          include:
-            - "api/**"
-            - "worker/**"
-            - "migration/**"
-            - "Cargo.toml"
-            - "Cargo.lock"
-            - ".woodpecker/clone-kaleido.sh"
-            - ".woodpecker/test-rust.sh"
-      - event: manual
-    commands:
-      - sh .woodpecker/clone-kaleido.sh
-
-  # Rust unit tests (uses local kaleido path, no network calls from cargo)
+  # Clone kaleido then run Rust unit tests.
+  # Merged into one step so there is no cross-step depends_on that breaks
+  # when the step is absent from the pipeline due to path filtering.
   - name: test-rust
     image: rust:1-bookworm
-    depends_on: [clone-kaleido]
     when:
       - event: push
         branch: main
@@ -47,6 +28,7 @@ steps:
     environment:
       TEST_MODE: "1"
     commands:
+      - sh .woodpecker/clone-kaleido.sh
       - sh .woodpecker/test-rust.sh
 
   # TypeScript type-check for ui-next (runs in parallel with Rust tests)
