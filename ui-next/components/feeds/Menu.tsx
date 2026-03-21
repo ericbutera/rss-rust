@@ -43,12 +43,14 @@ export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
         />
       )}
 
-      <FeedList
-        selectedFeed={selectedFeed}
-        onSelectFeed={onSelectFeed}
-        verifications={verifications}
-        onRemoveVerification={removeVerification}
-      />
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <FeedList
+          selectedFeed={selectedFeed}
+          onSelectFeed={onSelectFeed}
+          verifications={verifications}
+          onRemoveVerification={removeVerification}
+        />
+      </div>
     </div>
   );
 }
