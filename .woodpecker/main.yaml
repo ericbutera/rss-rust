@@ -3,11 +3,29 @@ when:
     branch: main
   - event: manual
 
+# Path sets (referenced in each step's when clause):
+#   rust: api/**, worker/**, migration/**, Cargo.{toml,lock},
+#         .woodpecker/{clone-kaleido,test-rust}.sh
+#   ui:   ui-next/**, .woodpecker/test-ui.sh
+
 steps:
   # Clone kaleido alongside the workspace so cargo uses the local [patch] path
   # in Cargo.toml rather than fetching from GitHub during the build.
   - name: clone-kaleido
     image: alpine/git
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "api/**"
+            - "worker/**"
+            - "migration/**"
+            - "Cargo.toml"
+            - "Cargo.lock"
+            - ".woodpecker/clone-kaleido.sh"
+            - ".woodpecker/test-rust.sh"
+      - event: manual
     commands:
       - sh .woodpecker/clone-kaleido.sh
 
@@ -15,6 +33,17 @@ steps:
   - name: test-rust
     image: rust:1-bookworm
     depends_on: [clone-kaleido]
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "api/**"
+            - "worker/**"
+            - "migration/**"
+            - "Cargo.*"
+            - ".woodpecker/**"
+      - event: manual
     environment:
       TEST_MODE: "1"
     commands:
@@ -23,6 +52,14 @@ steps:
   # TypeScript type-check for ui-next (runs in parallel with Rust tests)
   - name: test-ui
     image: node:25-alpine
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "ui-next/**"
+            - ".woodpecker/**"
+      - event: manual
     commands:
       - sh .woodpecker/test-ui.sh
 
@@ -31,6 +68,16 @@ steps:
   - name: build-api
     image: woodpeckerci/plugin-kaniko
     depends_on: [test-rust, test-ui]
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "api/**"
+            - "worker/**"
+            - "migration/**"
+            - "Cargo.*"
+      - event: manual
     settings:
       registry: registry.container-registry:5000
       repo: rss-api
@@ -47,6 +94,16 @@ steps:
   - name: build-worker
     image: woodpeckerci/plugin-kaniko
     depends_on: [build-api]
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "api/**"
+            - "worker/**"
+            - "migration/**"
+            - "Cargo.*"
+      - event: manual
     settings:
       registry: registry.container-registry:5000
       repo: rss-worker
@@ -63,12 +120,28 @@ steps:
   - name: create-ui-env
     image: alpine:latest
     depends_on: [build-worker]
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "ui-next/**"
+            - ".woodpecker/**"
+      - event: manual
     commands:
       - sh ui-next/create-env.sh
 
   - name: build-ui
     image: woodpeckerci/plugin-kaniko
     depends_on: [create-ui-env]
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "ui-next/**"
+            - ".woodpecker/**"
+      - event: manual
     settings:
       registry: registry.container-registry:5000
       repo: rss-ui
@@ -85,6 +158,17 @@ steps:
   - name: deploy
     image: pulumi/pulumi-go:latest
     depends_on: [build-api, build-worker, build-ui]
+    when:
+      - event: push
+        branch: main
+        path:
+          include:
+            - "api/**"
+            - "worker/**"
+            - "migration/**"
+            - "Cargo.*"
+            - "ui-next/**"
+      - event: manual
     environment:
       PULUMI_ACCESS_TOKEN:
         from_secret: PULUMI_ACCESS_TOKEN
