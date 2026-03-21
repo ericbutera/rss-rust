@@ -102,6 +102,8 @@ pub struct FeedResponse {
     pub favicon_url: Option<String>,
     /// Article layout mode: list | cards | magazine
     pub view_mode: String,
+    /// Folder this feed belongs to, or null
+    pub folder_id: Option<i32>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -132,6 +134,7 @@ impl FeedResponse {
         sort_order: i32,
         name_override: Option<String>,
         view_mode: String,
+        folder_id: Option<i32>,
     ) -> Self {
         FeedResponse {
             id: m.id,
@@ -147,6 +150,7 @@ impl FeedResponse {
             sort_order,
             favicon_url: m.favicon_url,
             view_mode,
+            folder_id,
         }
     }
 }
@@ -194,7 +198,7 @@ pub struct ArticleResponse {
 }
 
 impl ArticleResponse {
-    fn from_model(
+    pub fn from_model(
         m: articles::Model,
         read_at: Option<chrono::DateTime<chrono::Utc>>,
         saved_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -287,6 +291,10 @@ pub async fn list_feeds(
         .iter()
         .map(|uf| (uf.feed_id, uf.view_mode.clone()))
         .collect();
+    let folder_id_map: HashMap<i32, Option<i32>> = user_feed_rows
+        .iter()
+        .map(|uf| (uf.feed_id, uf.folder_id))
+        .collect();
     let feed_ids: Vec<i32> = user_feed_rows.into_iter().map(|uf| uf.feed_id).collect();
 
     let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids)
@@ -311,6 +319,7 @@ pub async fn list_feeds(
                 .get(&f.id)
                 .cloned()
                 .unwrap_or_else(|| "list".to_string());
+            let folder_id = folder_id_map.get(&f.id).copied().flatten();
             FeedResponse::from_model(
                 f,
                 last_read_at,
@@ -320,6 +329,7 @@ pub async fn list_feeds(
                 sort_order,
                 name_override,
                 view_mode,
+                folder_id,
             )
         })
         .collect();
@@ -413,6 +423,7 @@ pub async fn create_feed(
                 0,
                 None,
                 "list".to_string(),
+                None,
             ),
             task_id,
         }),
@@ -486,6 +497,7 @@ pub async fn rename_feed(
         uf.sort_order,
         uf.name_override,
         uf.view_mode,
+        uf.folder_id,
     )))
 }
 
@@ -539,6 +551,7 @@ pub async fn update_feed_view(
         uf.sort_order,
         uf.name_override,
         uf.view_mode,
+        uf.folder_id,
     )))
 }
 

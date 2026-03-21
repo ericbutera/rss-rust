@@ -134,6 +134,20 @@ fn select_first_text(doc: &Html, selector: &str) -> Option<String> {
     }
 }
 
+/// Extract the `src` of the first `<img>` element found in an HTML fragment.
+///
+/// Used as a fallback when a feed item embeds an image directly in its
+/// `<description>` or `<content>` field rather than using `<media:thumbnail>`
+/// or a full article page with Open Graph tags.
+pub fn extract_first_image(html: &str) -> Option<String> {
+    let doc = Html::parse_fragment(html);
+    let sel = Selector::parse("img[src]").ok()?;
+    doc.select(&sel)
+        .next()
+        .and_then(|e| e.value().attr("src"))
+        .map(|s| s.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

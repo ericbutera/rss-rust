@@ -1,5 +1,6 @@
 "use client";
 
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
   useArticle,
   useFeedArticles,
@@ -133,11 +134,7 @@ export default function Viewer({
       />
 
       <div className="flex flex-col flex-1">
-        {isLoading && (
-          <div className="flex justify-center py-16">
-            <span className="loading loading-spinner loading-lg" />
-          </div>
-        )}
+        {isLoading && <LoadingSpinner />}
         {isError && (
           <div className="alert alert-error">
             <span>Failed to load articles.</span>

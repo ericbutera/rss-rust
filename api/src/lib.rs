@@ -2,6 +2,7 @@ pub mod app_error;
 pub mod config;
 pub mod controllers;
 pub mod entities;
+pub mod extractors;
 pub mod feature_flags_keys;
 pub mod metrics;
 pub mod openapi;

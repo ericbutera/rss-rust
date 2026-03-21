@@ -1,139 +1,62 @@
 "use client";
 
 import { API_URL } from "@/lib/config";
-import { useFeeds, useReorderFeeds, type FeedResponse } from "@/lib/queries";
+import {
+  useAssignFeedToFolder,
+  useFeeds,
+  useFolders,
+  useReorderFeeds,
+  type FeedResponse,
+  type FolderResponse,
+} from "@/lib/queries";
 import type { Verifications } from "@/lib/usePendingVerifications";
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCenter,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
+  faChevronDown,
+  faChevronRight,
+  faFolder,
   faGripVertical,
   faLinkSlash,
-  faRss,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useCallback, useState } from "react";
-import VerificationIndicator from "./VerificationIndicator";
+import { useState } from "react";
+import FeedListItem from "./FeedListItem";
+import FolderSection from "./FolderSection";
 
 interface FeedListProps {
   selectedFeed: FeedResponse | null;
+  selectedFolderId: number | null;
   onSelectFeed: (feed: FeedResponse | null) => void;
+  onSelectFolder: (folder: FolderResponse | null) => void;
   verifications: Verifications;
   onRemoveVerification: (feedId: number) => void;
 }
 
-interface SortableFeedItemProps {
-  feed: FeedResponse;
-  isSelected: boolean;
-  onSelectFeed: (feed: FeedResponse | null) => void;
-  taskId: string | null;
-  onRemoveVerification: (id: number) => void;
-}
-
-function SortableFeedItem({
-  feed,
-  isSelected,
-  onSelectFeed,
-  taskId,
-  onRemoveVerification,
-}: SortableFeedItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: feed.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const handleVerificationDone = useCallback(
-    () => onRemoveVerification(feed.id),
-    [onRemoveVerification, feed.id],
-  );
-
-  const label =
-    feed.name ??
-    (() => {
-      try {
-        return new URL(feed.url).hostname;
-      } catch {
-        return feed.url || "Unknown feed";
-      }
-    })();
-  const hasUnread = feed.unread_count > 0;
-
+// Droppable zone for ungrouped feeds (allows dragging feeds OUT of folders)
+function UngroupedDropZone({ isVisible }: { isVisible: boolean }) {
+  const { isOver, setNodeRef } = useDroppable({ id: "ungrouped" });
+  if (!isVisible) return null;
   return (
-    <li ref={setNodeRef} style={style}>
+    <li ref={setNodeRef}>
       <div
-        className={`tooltip tooltip-right group flex items-center gap-2 px-2 py-1 rounded-btn cursor-pointer ${isSelected ? "active" : ""}`}
-        data-tip={label}
-        onClick={() => onSelectFeed(isSelected ? null : feed)}
+        className={`px-2 py-1 text-xs rounded-btn transition-colors ${isOver ? "bg-primary/20 ring-1 ring-primary text-primary" : "opacity-40"}`}
       >
-        <button
-          className="shrink-0 cursor-grab active:cursor-grabbing touch-none opacity-30 hover:opacity-70 p-0.5"
-          onClick={(e) => e.stopPropagation()}
-          {...attributes}
-          {...listeners}
-          aria-label="Drag to reorder"
-        >
-          <FontAwesomeIcon icon={faGripVertical} className="text-xs" />
-        </button>
-        {feed.favicon_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`${API_URL}/favicons/${feed.favicon_url}`}
-            alt=""
-            width={14}
-            height={14}
-            className={`shrink-0 w-3.5 h-3.5 ${hasUnread ? "" : "opacity-60"}`}
-            onError={(e) => {
-              // If the image fails to load, swap in the RSS icon fallback.
-              const el = e.currentTarget;
-              el.style.display = "none";
-              const icon = el.nextElementSibling as HTMLElement | null;
-              if (icon) icon.style.display = "inline-block";
-            }}
-          />
-        ) : (
-          <FontAwesomeIcon
-            icon={faRss}
-            className={`shrink-0 ${hasUnread ? "text-primary" : "opacity-60"}${feed.favicon_url ? " hidden" : ""}`}
-          />
-        )}
-
-        <div className="overflow-hidden min-w-0 flex-1">
-          <span className="whitespace-nowrap block">{label}</span>
-        </div>
-        {taskId && (
-          <VerificationIndicator
-            feed={feed}
-            taskId={taskId}
-            onDone={handleVerificationDone}
-          />
-        )}
-        {hasUnread && (
-          <span className="badge badge-primary badge-sm shrink-0 ml-auto">
-            {feed.unread_count > 99 ? "99+" : feed.unread_count}
-          </span>
-        )}
+        {isOver ? "Release to ungroup" : "── Ungrouped ──"}
       </div>
     </li>
   );
@@ -141,30 +64,68 @@ function SortableFeedItem({
 
 export default function FeedList({
   selectedFeed,
+  selectedFolderId,
   onSelectFeed,
+  onSelectFolder,
   verifications,
   onRemoveVerification: removeVerification,
 }: FeedListProps) {
-  const { data: feeds, isLoading } = useFeeds();
+  const { data: feeds, isLoading: feedsLoading } = useFeeds();
+  const { data: folders, isLoading: foldersLoading } = useFolders();
   const { mutateAsync: reorderFeeds } = useReorderFeeds();
+  const { mutateAsync: assignFeedToFolder } = useAssignFeedToFolder();
 
-  // Local copy for optimistic reordering
+  const isLoading = feedsLoading || foldersLoading;
+
+  const ungroupedFeeds = feeds.filter((f) => !f.folder_id);
+  const feedsByFolder = (folderId: number) =>
+    feeds.filter((f) => f.folder_id === folderId);
+
   const [localFeeds, setLocalFeeds] = useState<FeedResponse[] | null>(null);
-  const displayFeeds = localFeeds ?? feeds;
+  const displayUngrouped = localFeeds ?? ungroupedFeeds;
+
+  // Track which feed is being dragged (for DragOverlay)
+  const [activeFeed, setActiveFeed] = useState<FeedResponse | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  function handleDragStart(event: DragStartEvent) {
+    const feed = feeds.find((f) => f.id === event.active.id);
+    setActiveFeed(feed ?? null);
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    setActiveFeed(null);
     if (!over || active.id === over.id) return;
 
-    const oldIndex = displayFeeds.findIndex((f) => f.id === active.id);
-    const newIndex = displayFeeds.findIndex((f) => f.id === over.id);
+    const feedId = active.id as number;
+
+    // Dropped on a folder → assign feed to that folder
+    if (typeof over.id === "string" && over.id.startsWith("folder-")) {
+      const folderId = Number(over.id.replace("folder-", ""));
+      const draggedFeed = feeds.find((f) => f.id === feedId);
+      if (!draggedFeed || draggedFeed.folder_id === folderId) return;
+      await assignFeedToFolder(feedId, folderId);
+      return;
+    }
+
+    // Dropped on the ungrouped zone → remove from folder
+    if (over.id === "ungrouped") {
+      const draggedFeed = feeds.find((f) => f.id === feedId);
+      if (!draggedFeed || draggedFeed.folder_id === null) return;
+      await assignFeedToFolder(feedId, null);
+      return;
+    }
+
+    // Dropped on another ungrouped feed → reorder
+    const oldIndex = displayUngrouped.findIndex((f) => f.id === active.id);
+    const newIndex = displayUngrouped.findIndex((f) => f.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(displayFeeds, oldIndex, newIndex);
+    const reordered = arrayMove(displayUngrouped, oldIndex, newIndex);
     setLocalFeeds(reordered);
 
     try {
@@ -176,50 +137,91 @@ export default function FeedList({
     }
   }
 
+  if (isLoading) {
+    return (
+      <ul className="menu menu-sm w-full">
+        <li>
+          <span className="loading loading-spinner loading-xs" />
+        </li>
+      </ul>
+    );
+  }
+
+  if (feeds.length === 0 && folders.length === 0) {
+    return (
+      <ul className="menu menu-sm w-full">
+        <li>
+          <span className="text-xs opacity-50 flex items-center gap-2">
+            <FontAwesomeIcon icon={faLinkSlash} />
+            No feeds yet
+          </span>
+        </li>
+      </ul>
+    );
+  }
+
+  const hasFolders = folders.length > 0;
+
   return (
-    <>
-      {isLoading && (
-        <ul className="menu menu-sm w-full">
-          <li>
-            <span className="loading loading-spinner loading-xs" />
-          </li>
-        </ul>
-      )}
-      {!isLoading && feeds.length === 0 && (
-        <ul className="menu menu-sm w-full">
-          <li>
-            <span className="text-xs opacity-50 flex items-center gap-2">
-              <FontAwesomeIcon icon={faLinkSlash} />
-              No feeds yet
-            </span>
-          </li>
-        </ul>
-      )}
-      {!isLoading && feeds.length > 0 && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <ul className="menu menu-sm w-full gap-0.5">
+        {/* Folders with their feeds */}
+        {folders.map((folder) => (
+          <FolderSection
+            key={folder.id}
+            folder={folder}
+            feeds={feedsByFolder(folder.id)}
+            isSelected={selectedFolderId === folder.id}
+            selectedFeed={selectedFeed}
+            onSelectFolder={onSelectFolder}
+            onSelectFeed={onSelectFeed}
+            verifications={verifications}
+            onRemoveVerification={removeVerification}
+          />
+        ))}
+
+        {/* Drop zone label when folders exist */}
+        <UngroupedDropZone
+          isVisible={hasFolders && feeds.some((f) => !!f.folder_id)}
+        />
+
+        {/* Ungrouped feeds with drag-to-reorder */}
+        {displayUngrouped.length > 0 && (
           <SortableContext
-            items={displayFeeds.map((f) => f.id)}
+            items={displayUngrouped.map((f) => f.id)}
             strategy={verticalListSortingStrategy}
           >
-            <ul className="menu menu-sm w-full gap-0.5">
-              {displayFeeds.map((feed) => (
-                <SortableFeedItem
-                  key={feed.id}
-                  feed={feed}
-                  isSelected={selectedFeed?.id === feed.id}
-                  onSelectFeed={onSelectFeed}
-                  taskId={verifications[feed.id] ?? null}
-                  onRemoveVerification={removeVerification}
-                />
-              ))}
-            </ul>
+            {displayUngrouped.map((feed) => (
+              <FeedListItem
+                key={feed.id}
+                feed={feed}
+                isSelected={selectedFeed?.id === feed.id}
+                onSelectFeed={onSelectFeed}
+                taskId={verifications[feed.id] ?? null}
+                onRemoveVerification={removeVerification}
+              />
+            ))}
           </SortableContext>
-        </DndContext>
-      )}
-    </>
+        )}
+      </ul>
+
+      {/* Ghost image while dragging */}
+      <DragOverlay>
+        {activeFeed && (
+          <div className="bg-base-200 rounded-btn px-2 py-1 text-sm shadow-lg opacity-90 flex items-center gap-2">
+            <FontAwesomeIcon
+              icon={faGripVertical}
+              className="text-xs opacity-50"
+            />
+            {activeFeed.name ?? activeFeed.url}
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

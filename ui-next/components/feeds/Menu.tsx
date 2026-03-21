@@ -1,20 +1,29 @@
 "use client";
 
-import { type FeedResponse } from "@/lib/queries";
+import { type FeedResponse, type FolderResponse } from "@/lib/queries";
 import { usePendingVerifications } from "@/lib/usePendingVerifications";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 import AddFeedForm from "./AddFeedForm";
+import CreateFolderForm from "./CreateFolderForm";
 import FeedList from "./FeedList";
 
 interface MenuProps {
   selectedFeed: FeedResponse | null;
+  selectedFolderId: number | null;
   onSelectFeed: (feed: FeedResponse | null) => void;
+  onSelectFolder: (folder: FolderResponse | null) => void;
 }
 
-export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
-  const [showAddForm, setShowAddForm] = useState(false);
+export default function Menu({
+  selectedFeed,
+  selectedFolderId,
+  onSelectFeed,
+  onSelectFolder,
+}: MenuProps) {
+  const [showAddFeed, setShowAddFeed] = useState(false);
+  const [showAddFolder, setShowAddFolder] = useState(false);
   const {
     verifications,
     add: addVerification,
@@ -27,26 +36,47 @@ export default function Menu({ selectedFeed, onSelectFeed }: MenuProps) {
         <span className="font-bold text-sm uppercase tracking-wide opacity-60">
           Feeds
         </span>
-        <button
-          className="btn btn-ghost btn-xs"
-          onClick={() => setShowAddForm((v) => !v)}
-          title="Subscribe to a feed"
-        >
-          <FontAwesomeIcon icon={faPlus} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            className="btn btn-ghost btn-xs"
+            onClick={() => {
+              setShowAddFolder((v) => !v);
+              setShowAddFeed(false);
+            }}
+            title="Create a folder"
+          >
+            <FontAwesomeIcon icon={faFolder} />
+          </button>
+          <button
+            className="btn btn-ghost btn-xs"
+            onClick={() => {
+              setShowAddFeed((v) => !v);
+              setShowAddFolder(false);
+            }}
+            title="Subscribe to a feed"
+          >
+            <FontAwesomeIcon icon={faPlus} />
+          </button>
+        </div>
       </div>
 
-      {showAddForm && (
+      {showAddFeed && (
         <AddFeedForm
-          onClose={() => setShowAddForm(false)}
+          onClose={() => setShowAddFeed(false)}
           onVerificationAdded={addVerification}
         />
+      )}
+
+      {showAddFolder && (
+        <CreateFolderForm onClose={() => setShowAddFolder(false)} />
       )}
 
       <div className="flex-1 overflow-y-auto min-h-0">
         <FeedList
           selectedFeed={selectedFeed}
+          selectedFolderId={selectedFolderId}
           onSelectFeed={onSelectFeed}
+          onSelectFolder={onSelectFolder}
           verifications={verifications}
           onRemoveVerification={removeVerification}
         />

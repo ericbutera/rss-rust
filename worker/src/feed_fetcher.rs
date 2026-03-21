@@ -39,6 +39,8 @@ pub(crate) struct ArticleData {
     pub(crate) image_url: Option<String>,
     pub(crate) content: Option<String>,
     pub(crate) guid: Option<String>,
+    /// Raw (unsanitized) description HTML, kept only to support content-image extraction.
+    pub(crate) raw_description: Option<String>,
 }
 
 fn sanitize_html(html: Option<String>) -> Option<String> {
@@ -109,12 +111,12 @@ pub(crate) fn entry_to_article_data(entry: Entry) -> Option<ArticleData> {
     let image_url: Option<String> = extract_media_image(&entry);
     let title = entry.title.map(|t| t.content);
 
-    let description = sanitize_html(
-        entry
-            .summary
-            .map(|s| s.content)
-            .or_else(|| entry.content.as_ref().and_then(|c| c.body.clone())),
-    );
+    let raw_summary = entry
+        .summary
+        .map(|s| s.content)
+        .or_else(|| entry.content.as_ref().and_then(|c| c.body.clone()));
+
+    let description = sanitize_html(raw_summary.clone());
 
     let content = sanitize_html(entry.content.and_then(|c| c.body));
 
@@ -125,6 +127,7 @@ pub(crate) fn entry_to_article_data(entry: Entry) -> Option<ArticleData> {
         image_url,
         content,
         guid,
+        raw_description: raw_summary,
     })
 }
 
@@ -239,6 +242,24 @@ impl FeedFetchService {
         html_extractor::extract_article(&html).image_url
     }
 
+    /// Decide the best image URL for an article using the configured priority:
+    /// 1. RSS media image (thumbnails / media:content)
+    /// 2. First <img> found in the RSS description/content HTML (cheap, no network)
+    /// 3. og:image extracted from the article page (network request, best-effort)
+    async fn extract_image_url(&self, data: &ArticleData) -> Option<String> {
+        if data.image_url.is_some() {
+            return data.image_url.clone();
+        }
+
+        if let Some(raw) = data.raw_description.as_deref() {
+            if let Some(img) = html_extractor::extract_first_image(raw) {
+                return Some(img);
+            }
+        }
+
+        self.enrich_image(&data.url).await
+    }
+
     /// Convert a feed entry to article data and persist it.
     /// Returns `true` if a new article was inserted.
     async fn persist_entry(&self, feed_id: i32, entry: Entry) -> anyhow::Result<bool> {
@@ -251,13 +272,7 @@ impl FeedFetchService {
             return Ok(false);
         }
 
-        // If the feed doesn't include an image, try fetching the article page
-        // to extract og:image. This is best-effort; failures are ignored.
-        let image_url = if data.image_url.is_some() {
-            data.image_url
-        } else {
-            self.enrich_image(&data.url).await
-        };
+        let image_url = self.extract_image_url(&data).await;
 
         articles::Model::create_full(
             db,

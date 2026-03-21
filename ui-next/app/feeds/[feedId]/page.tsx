@@ -1,6 +1,7 @@
 "use client";
 
 import Viewer from "@/components/feeds/Viewer";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFeeds } from "@/lib/queries";
 import { useParams, useRouter } from "next/navigation";
 
@@ -14,13 +15,7 @@ export default function FeedPage() {
     ? null
     : (feeds.find((f) => f.id === parsedId) ?? null);
 
-  if (isLoading && !feed) {
-    return (
-      <div className="flex justify-center py-16">
-        <span className="loading loading-spinner loading-lg" />
-      </div>
-    );
-  }
+  if (isLoading && !feed) return <LoadingSpinner />;
 
   if (!feed) {
     return (

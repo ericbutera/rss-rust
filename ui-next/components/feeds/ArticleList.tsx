@@ -143,7 +143,7 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
 
 interface ArticleListProps {
   articles: ArticleResponse[];
-  feedId: number;
+  feedId?: number;
   openArticleId: number | null;
   toggleArticle: (article: ArticleResponse) => void;
   lastReadAt?: string | null;
@@ -204,7 +204,7 @@ export default function ArticleList({
                     className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleSave(article.id, feedId);
+                      toggleSave(article.id, feedId ?? article.feed_id);
                     }}
                     title={article.saved_at ? "Unsave" : "Save"}
                   >
@@ -265,7 +265,7 @@ export default function ArticleList({
                       className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleSave(article.id, feedId);
+                        toggleSave(article.id, feedId ?? article.feed_id);
                       }}
                       title={article.saved_at ? "Unsave" : "Save"}
                     >
@@ -333,7 +333,7 @@ export default function ArticleList({
                     className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleSave(article.id, feedId);
+                      toggleSave(article.id, feedId ?? article.feed_id);
                     }}
                   >
                     <FontAwesomeIcon

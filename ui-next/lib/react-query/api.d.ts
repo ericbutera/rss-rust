@@ -500,6 +500,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/feeds/{id}/folder": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Assign (or unassign) a feed to a folder */
+    put: operations["assign_feed_to_folder"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/feeds/{id}/name": {
     parameters: {
       query?: never;
@@ -544,6 +561,75 @@ export interface paths {
     get?: never;
     /** Mark all articles in a feed as read for the current user */
     put: operations["mark_feed_read"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/folders": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List all folders for the current user */
+    get: operations["list_folders"];
+    put?: never;
+    /** Create a new folder */
+    post: operations["create_folder"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/folders/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a folder (feeds in the folder become unassigned) */
+    delete: operations["delete_folder"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/folders/{id}/articles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List articles across all feeds in a folder */
+    get: operations["list_folder_articles"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/folders/{id}/name": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Rename a folder */
+    put: operations["rename_folder"];
     post?: never;
     delete?: never;
     options?: never;
@@ -636,6 +722,13 @@ export interface components {
       updated_at: string;
       url: string;
     };
+    AssignFolderRequest: {
+      /**
+       * Format: int32
+       * @description Folder ID to assign, or null to remove from any folder
+       */
+      folder_id?: number | null;
+    };
     CreateFeedRequest: {
       name?: string | null;
       url: string;
@@ -649,6 +742,9 @@ export interface components {
        *     `None` when subscribing to an already-verified feed.
        */
       task_id?: string | null;
+    };
+    CreateFolderRequest: {
+      name: string;
     };
     FaviconTaskResponse: {
       message: string;
@@ -664,6 +760,11 @@ export interface components {
       created_at: string;
       /** @description API path to the feed's favicon (e.g. /api/favicons/feed_1.ico), or null if unavailable */
       favicon_url?: string | null;
+      /**
+       * Format: int32
+       * @description Folder this feed belongs to, or null
+       */
+      folder_id?: number | null;
       /** Format: int32 */
       id: number;
       /**
@@ -728,6 +829,22 @@ export interface components {
        */
       rows_updated: number;
     };
+    FolderResponse: {
+      /** Format: date-time */
+      created_at: string;
+      /** Format: int32 */
+      id: number;
+      name: string;
+      /** Format: int32 */
+      sort_order: number;
+      /**
+       * Format: int64
+       * @description Total unread article count across all feeds in this folder
+       */
+      unread_count: number;
+      /** Format: date-time */
+      updated_at: string;
+    };
     ForgotPasswordRequest: {
       email: string;
     };
@@ -737,12 +854,6 @@ export interface components {
     };
     MessageResponse: {
       message: string;
-    };
-    ReorderFeedItem: {
-      /** Format: int32 */
-      feed_id: number;
-      /** Format: int32 */
-      sort_order: number;
     };
     /**
      * @description A named, displayable metric with a machine-readable key and human-readable label.
@@ -875,6 +986,15 @@ export interface components {
     };
     RegisterResponse: {
       pid: string;
+    };
+    RenameFolderRequest: {
+      name: string;
+    };
+    ReorderFeedItem: {
+      /** Format: int32 */
+      feed_id: number;
+      /** Format: int32 */
+      sort_order: number;
     };
     ResendConfirmationRequest: {
       email: string;
@@ -1770,6 +1890,35 @@ export interface operations {
       };
     };
   };
+  reorder_feeds: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReorderFeedItem"][];
+      };
+    };
+    responses: {
+      /** @description Sort order updated */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   get_task_status: {
     parameters: {
       query?: never;
@@ -1918,21 +2067,24 @@ export interface operations {
       };
     };
   };
-  reorder_feeds: {
+  assign_feed_to_folder: {
     parameters: {
       query?: never;
       header?: never;
-      path?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
       cookie?: never;
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ReorderFeedItem"][];
+        "application/json": components["schemas"]["AssignFolderRequest"];
       };
     };
     responses: {
-      /** @description Sort order updated */
-      204: {
+      /** @description Feed folder updated */
+      200: {
         headers: {
           [name: string]: unknown;
         };
@@ -1940,6 +2092,13 @@ export interface operations {
       };
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed subscription not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -2058,6 +2217,182 @@ export interface operations {
         content?: never;
       };
       /** @description Subscription not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  list_folders: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List folders */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FolderResponse"][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  create_folder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateFolderRequest"];
+      };
+    };
+    responses: {
+      /** @description Folder created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FolderResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  delete_folder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Folder ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Folder deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Folder not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  list_folder_articles: {
+    parameters: {
+      query?: {
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Number of items per page */
+        per_page?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Folder ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Folder articles */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PaginatedResponse_ArticleResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Folder not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  rename_folder: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Folder ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RenameFolderRequest"];
+      };
+    };
+    responses: {
+      /** @description Folder renamed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FolderResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Folder not found */
       404: {
         headers: {
           [name: string]: unknown;

@@ -17,6 +17,7 @@ pub struct Model {
     pub sort_order: i32,
     pub name_override: Option<String>,
     pub view_mode: String,
+    pub folder_id: Option<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -106,15 +107,11 @@ impl Model {
         user_id: i32,
         feed_id: i32,
     ) -> Result<Option<Self>, DbErr> {
-        use sea_orm::{ActiveModelTrait, EntityTrait};
-        let Some(row) = Entity::find_by_id((user_id, feed_id)).one(db).await? else {
-            return Ok(None);
-        };
-        let mut active: ActiveModel = row.into();
-        active.all_articles_read_at = Set(Some(Utc::now()));
-        active.unread_count = Set(0);
-        active.updated_at = Set(Utc::now());
-        active.update(db).await.map(Some)
+        Self::modify_subscription(db, user_id, feed_id, |am| {
+            am.all_articles_read_at = Set(Some(Utc::now()));
+            am.unread_count = Set(0);
+        })
+        .await
     }
 
     /// Increment `unread_count` by 1 for every subscriber of the given feed.
@@ -214,14 +211,39 @@ impl Model {
         feed_id: i32,
         view_mode: &str,
     ) -> Result<Option<Self>, DbErr> {
-        use sea_orm::{ActiveModelTrait, EntityTrait};
-        let Some(row) = Entity::find_by_id((user_id, feed_id)).one(db).await? else {
-            return Ok(None);
-        };
-        let mut active: ActiveModel = row.into();
-        active.view_mode = Set(view_mode.to_string());
-        active.updated_at = Set(Utc::now());
-        active.update(db).await.map(Some)
+        Self::modify_subscription(db, user_id, feed_id, |am| {
+            am.view_mode = Set(view_mode.to_string());
+        })
+        .await
+    }
+
+    /// Assign (or unassign) a folder for a feed subscription.
+    /// Returns `None` if the subscription doesn't exist.
+    pub async fn set_folder(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        feed_id: i32,
+        folder_id: Option<i32>,
+    ) -> Result<Option<Self>, DbErr> {
+        Self::modify_subscription(db, user_id, feed_id, |am| {
+            am.folder_id = Set(folder_id);
+        })
+        .await
+    }
+
+    /// Get all subscriptions for a user in a specific folder.
+    pub async fn for_user_in_folder(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        folder_id: i32,
+    ) -> Result<Vec<Self>, DbErr> {
+        use sea_orm::{EntityTrait, QueryFilter, QueryOrder};
+        Entity::find()
+            .filter(Column::UserId.eq(user_id))
+            .filter(Column::FolderId.eq(folder_id))
+            .order_by_asc(Column::SortOrder)
+            .all(db)
+            .await
     }
 
     /// Set (or clear) the user's custom name for a feed subscription.
@@ -232,12 +254,27 @@ impl Model {
         feed_id: i32,
         name: Option<String>,
     ) -> Result<Option<Self>, DbErr> {
-        use sea_orm::{ActiveModelTrait, EntityTrait};
+        Self::modify_subscription(db, user_id, feed_id, |am| {
+            am.name_override = Set(name);
+        })
+        .await
+    }
+
+    async fn modify_subscription<F>(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        feed_id: i32,
+        f: F,
+    ) -> Result<Option<Self>, DbErr>
+    where
+        F: FnOnce(&mut ActiveModel),
+    {
+        use sea_orm::EntityTrait;
         let Some(row) = Entity::find_by_id((user_id, feed_id)).one(db).await? else {
             return Ok(None);
         };
         let mut active: ActiveModel = row.into();
-        active.name_override = Set(name);
+        f(&mut active);
         active.updated_at = Set(Utc::now());
         active.update(db).await.map(Some)
     }

@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod assets;
 pub mod feeds;
+pub mod folders;
 
 use crate::storage::AppStorage;
 use axum::{routing::get, Json, Router};
@@ -23,8 +24,12 @@ pub fn routes() -> Router<Arc<AppStorage>> {
             background_jobs::admin::admin_routes::<AppStorage, AdminUserContext<AppStorage>>(),
         )
         .nest("/api/admin/users", auth::admin_routes())
-        .nest("/api/admin/metrics", metrics_controller::admin_routes::<AppStorage>())
+        .nest(
+            "/api/admin/metrics",
+            metrics_controller::admin_routes::<AppStorage>(),
+        )
         .nest("/api", feeds::routes())
+        .nest("/api", folders::routes())
         .nest("/api/admin", admin::routes())
         .route("/api/favicons/:filename", get(assets::get_favicon))
         .route("/api/health", get(health))

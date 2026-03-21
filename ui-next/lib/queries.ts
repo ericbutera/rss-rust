@@ -29,6 +29,7 @@ export type NamedStat = components["schemas"]["NamedStat"];
 // `StatResult` was removed from the OpenAPI schema. Define it locally to match
 // the shape expected by kaleido's admin components (value + optional error).
 export type StatResult = { value: number; error?: string | null };
+export type FolderResponse = components["schemas"]["FolderResponse"];
 
 export function useFeeds() {
   const resp = $api.useQuery("get", "/feeds", {});
@@ -246,6 +247,123 @@ export function useUpdateFeedView() {
       await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
     },
   };
+}
+
+export function useFolders() {
+  const resp = $api.useQuery("get", "/folders", {});
+  return { ...resp, data: (resp.data ?? []) as FolderResponse[] };
+}
+
+export function useCreateFolder() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("post", "/folders");
+  return {
+    ...mutation,
+    mutateAsync: async (name: string): Promise<FolderResponse> => {
+      const result = await mutation.mutateAsync({ body: { name } });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/folders"] });
+      return result as FolderResponse;
+    },
+  };
+}
+
+export function useRenameFolder() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/folders/{id}/name");
+  return {
+    ...mutation,
+    mutateAsync: async (folderId: number, name: string): Promise<void> => {
+      await mutation.mutateAsync({
+        params: { path: { id: folderId } },
+        body: { name },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/folders"] });
+    },
+  };
+}
+
+export function useDeleteFolder() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("delete", "/folders/{id}");
+  return {
+    ...mutation,
+    mutateAsync: async (folderId: number): Promise<void> => {
+      await mutation.mutateAsync({ params: { path: { id: folderId } } });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/folders"] });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+    },
+  };
+}
+
+export function useAssignFeedToFolder() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/feeds/{id}/folder");
+  return {
+    ...mutation,
+    mutateAsync: async (
+      feedId: number,
+      folderId: number | null,
+    ): Promise<void> => {
+      await mutation.mutateAsync({
+        params: { path: { id: feedId } },
+        body: { folder_id: folderId },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+    },
+  };
+}
+
+export function useMarkFolderRead() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/feeds/{id}/read");
+  return {
+    mutate: (feedIds: number[]) => {
+      let pending = feedIds.length;
+      if (pending === 0) return;
+      feedIds.forEach((feedId) => {
+        mutation.mutate(
+          { params: { path: { id: feedId } } },
+          {
+            onSuccess: () => {
+              pending -= 1;
+              if (pending === 0) {
+                queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+                queryClient.invalidateQueries({
+                  queryKey: ["get", "/folders"],
+                });
+              }
+            },
+          },
+        );
+      });
+    },
+  };
+}
+
+export function useFolderArticles(folderId: number | null, onlySaved = false) {
+  return useInfiniteQuery<
+    components["schemas"]["PaginatedResponse_ArticleResponse"],
+    Error
+  >({
+    queryKey: ["folders", folderId, "articles", { onlySaved }],
+    enabled: folderId !== null,
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const savedParam = onlySaved ? "&only_saved=true" : "";
+      const url = `${API_URL}/folders/${folderId}/articles?page=${pageParam}&per_page=20${savedParam}`;
+      const resp = await fetch(url, { credentials: "include" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return resp.json() as Promise<
+        components["schemas"]["PaginatedResponse_ArticleResponse"]
+      >;
+    },
+    getNextPageParam: (
+      lastPage: components["schemas"]["PaginatedResponse_ArticleResponse"],
+    ) => {
+      const { page, total_pages } = lastPage.metadata;
+      return page < total_pages ? page + 1 : undefined;
+    },
+  });
 }
 
 export function useInvalidateFeeds() {

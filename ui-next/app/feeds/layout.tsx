@@ -3,32 +3,50 @@
 import RequireAuth from "@/components/auth/RequireAuth";
 import Menu from "@/components/feeds/Menu";
 import Layout from "@/components/Layout";
-import { useFeeds, type FeedResponse } from "@/lib/queries";
+import {
+  useFeeds,
+  useFolders,
+  type FeedResponse,
+  type FolderResponse,
+} from "@/lib/queries";
 import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 function FeedsLayoutInner({ children }: { children: ReactNode }) {
-  const params = useParams<{ feedId?: string }>();
+  const params = useParams<{ feedId?: string; folderId?: string }>();
   const router = useRouter();
   const { data: feeds } = useFeeds();
+  const { data: folders } = useFolders();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const feedId = params.feedId ? parseInt(params.feedId, 10) : null;
-  const selectedFeed =
-    feedId !== null ? (feeds.find((f) => f.id === feedId) ?? null) : null;
+  const folderId = params.folderId ? parseInt(params.folderId, 10) : null;
 
-  // Auto-select the first feed when navigating to /feeds with no specific feed
+  const selectedFeed =
+    feedId !== null && !isNaN(feedId)
+      ? (feeds.find((f) => f.id === feedId) ?? null)
+      : null;
+
+  const selectedFolderId =
+    folderId !== null && !isNaN(folderId) ? folderId : null;
+
+  // Auto-select first feed when navigating to /feeds with nothing selected
   useEffect(() => {
-    if (feedId === null && feeds.length > 0) {
+    if (feedId === null && folderId === null && feeds.length > 0) {
       router.replace(`/feeds/${feeds[0].id}`);
     }
-  }, [feedId, feeds, router]);
+  }, [feedId, folderId, feeds, router]);
 
   function handleSelectFeed(feed: FeedResponse | null) {
     setSidebarOpen(false);
     router.push(feed ? `/feeds/${feed.id}` : "/feeds");
+  }
+
+  function handleSelectFolder(folder: FolderResponse | null) {
+    setSidebarOpen(false);
+    router.push(folder ? `/feeds/folder/${folder.id}` : "/feeds");
   }
 
   return (
@@ -50,7 +68,12 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           `}
         >
-          <Menu selectedFeed={selectedFeed} onSelectFeed={handleSelectFeed} />
+          <Menu
+            selectedFeed={selectedFeed}
+            selectedFolderId={selectedFolderId}
+            onSelectFeed={handleSelectFeed}
+            onSelectFolder={handleSelectFolder}
+          />
         </aside>
 
         {/* Main content */}
