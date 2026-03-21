@@ -116,6 +116,7 @@ export default function FolderViewer({
         {!isLoading && !isError && articles.length > 0 && (
           <ArticleList
             articles={articles}
+            feeds={feeds}
             openArticleId={openArticleId}
             toggleArticle={toggleArticle}
             viewMode={folder.view_mode}

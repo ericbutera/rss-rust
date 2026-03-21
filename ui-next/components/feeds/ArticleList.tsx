@@ -1,9 +1,14 @@
 "use client";
 
-import { useToggleSaveArticle, type ArticleResponse } from "@/lib/queries";
+import { API_URL } from "@/lib/config";
+import {
+  useToggleSaveArticle,
+  type ArticleResponse,
+  type FeedResponse,
+} from "@/lib/queries";
 import type { Density, TextSize } from "@/lib/useViewPreferences";
 import { faBookmark as faBookmarkOutline } from "@fortawesome/free-regular-svg-icons";
-import { faBookmark } from "@fortawesome/free-solid-svg-icons";
+import { faBookmark, faRss } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import DOMPurify from "dompurify";
 import { useEffect, useState } from "react";
@@ -141,9 +146,42 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
   );
 }
 
+/** Small feed source label — shown in folder views where articles come from multiple feeds. */
+function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
+  if (!feed) return null;
+  const name =
+    feed.name ??
+    (() => {
+      try {
+        return new URL(feed.url).hostname;
+      } catch {
+        return feed.url;
+      }
+    })();
+  return (
+    <span className="flex items-center gap-1 text-xs opacity-40 shrink-0 max-w-[100px]">
+      {feed.favicon_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`${API_URL}/favicons/${feed.favicon_url}`}
+          alt=""
+          width={12}
+          height={12}
+          className="w-3 h-3 shrink-0"
+        />
+      ) : (
+        <FontAwesomeIcon icon={faRss} className="shrink-0" />
+      )}
+      <span className="truncate">{name}</span>
+    </span>
+  );
+}
+
 interface ArticleListProps {
   articles: ArticleResponse[];
   feedId?: number;
+  /** Passed from folder views so each article can show its source feed. */
+  feeds?: FeedResponse[];
   openArticleId: number | null;
   toggleArticle: (article: ArticleResponse) => void;
   lastReadAt?: string | null;
@@ -155,6 +193,7 @@ interface ArticleListProps {
 export default function ArticleList({
   articles,
   feedId,
+  feeds,
   openArticleId,
   toggleArticle,
   lastReadAt,
@@ -163,6 +202,9 @@ export default function ArticleList({
   textSize = "base",
 }: ArticleListProps) {
   const { mutate: toggleSave } = useToggleSaveArticle();
+  const feedMap = feeds
+    ? Object.fromEntries(feeds.map((f) => [f.id, f]))
+    : null;
   const articleRead = (article: ArticleResponse) =>
     Boolean(article.read_at) ||
     (!!lastReadAt && article.created_at <= lastReadAt);
@@ -177,6 +219,7 @@ export default function ArticleList({
         {articles.map((article) => {
           const isRead = articleRead(article);
           const isOpen = openArticleId === article.id;
+          const articleFeed = feedMap?.[article.feed_id];
           return (
             <div
               key={article.id}
@@ -187,8 +230,8 @@ export default function ArticleList({
                 article={article}
                 className="rounded-t-box w-full h-36 object-cover"
               />
-              <div className="card-body p-3 gap-1">
-                <p className="font-semibold text-sm leading-snug line-clamp-2">
+              <div className="card-body article-card-inner p-3 gap-1">
+                <p className="article-card-title font-semibold text-sm leading-snug line-clamp-2">
                   {article.title ?? article.url}
                 </p>
                 {article.preview && (
@@ -197,8 +240,11 @@ export default function ArticleList({
                   </p>
                 )}
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs opacity-40">
-                    {relativeTime(article.created_at)}
+                  <span className="flex items-center gap-2">
+                    <span className="text-xs opacity-40">
+                      {relativeTime(article.created_at)}
+                    </span>
+                    <FeedLabel feed={articleFeed} />
                   </span>
                   <button
                     className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
@@ -236,10 +282,11 @@ export default function ArticleList({
         {articles.map((article) => {
           const isRead = articleRead(article);
           const isOpen = openArticleId === article.id;
+          const articleFeed = feedMap?.[article.feed_id];
           return (
             <div key={article.id}>
               <div
-                className={`flex gap-3 items-start p-3 cursor-pointer hover:bg-base-200 transition-colors ${isRead && !isOpen ? "opacity-60" : ""}`}
+                className={`article-magazine-item flex gap-3 items-start p-3 cursor-pointer hover:bg-base-200 transition-colors ${isRead && !isOpen ? "opacity-60" : ""}`}
                 onClick={() => toggleArticle(article)}
               >
                 <ArticleThumbnail
@@ -248,7 +295,7 @@ export default function ArticleList({
                 />
                 <div className="flex-1 min-w-0 flex flex-col gap-1">
                   <p
-                    className={`font-semibold text-sm leading-snug line-clamp-2 ${isOpen ? "text-primary" : ""}`}
+                    className={`article-magazine-title font-semibold text-sm leading-snug line-clamp-2 ${isOpen ? "text-primary" : ""}`}
                   >
                     {article.title ?? article.url}
                   </p>
@@ -258,11 +305,12 @@ export default function ArticleList({
                     </p>
                   )}
                   <div className="flex items-center gap-2 mt-auto">
-                    <span className="text-xs opacity-40 flex-1">
+                    <span className="text-xs opacity-40">
                       {relativeTime(article.created_at)}
                     </span>
+                    <FeedLabel feed={articleFeed} />
                     <button
-                      className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
+                      className={`btn btn-ghost btn-xs btn-circle ml-auto ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleSave(article.id, feedId ?? article.feed_id);
@@ -298,6 +346,7 @@ export default function ArticleList({
       {articles.map((article: ArticleResponse) => {
         const isRead = articleRead(article);
         const isOpen = openArticleId === article.id;
+        const articleFeed = feedMap?.[article.feed_id];
         return (
           <div
             key={article.id}
@@ -323,6 +372,7 @@ export default function ArticleList({
                 <span className="truncate flex-1">
                   {article.title ?? article.url}
                 </span>
+                <FeedLabel feed={articleFeed} />
                 <div
                   className="tooltip tooltip-left relative z-[2]"
                   data-tip={

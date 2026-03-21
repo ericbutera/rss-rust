@@ -59,8 +59,7 @@ export default function FeedListItem({
   return (
     <li ref={setNodeRef} style={style}>
       <div
-        className={`tooltip tooltip-right group flex items-center gap-2 px-2 py-1 rounded-btn cursor-grab active:cursor-grabbing touch-none ${isDragging ? "opacity-40" : ""} ${isSelected ? "active" : ""}`}
-        data-tip={label}
+        className={`group flex items-center gap-2 px-2 py-1 rounded-btn cursor-grab active:cursor-grabbing touch-none ${isDragging ? "opacity-40" : ""} ${isSelected ? "active" : ""}`}
         onClick={() => onSelectFeed(isSelected ? null : feed)}
         {...attributes}
         {...listeners}

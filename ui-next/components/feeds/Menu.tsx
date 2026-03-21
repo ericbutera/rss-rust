@@ -71,7 +71,7 @@ export default function Menu({
         <CreateFolderForm onClose={() => setShowAddFolder(false)} />
       )}
 
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         <FeedList
           selectedFeed={selectedFeed}
           selectedFolderId={selectedFolderId}

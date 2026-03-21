@@ -148,8 +148,50 @@ body {
   gap: 1rem;
 }
 
+.article-list[data-density="compact"] .article-card-grid {
+  gap: 0.5rem;
+}
+.article-list[data-density="compact"] .article-card-inner {
+  padding: 0.5rem !important;
+  gap: 0.25rem !important;
+}
+.article-list[data-density="cozy"] .article-card-grid {
+  gap: 1.5rem;
+}
+.article-list[data-density="cozy"] .article-card-inner {
+  padding: 1rem !important;
+}
+.article-list[data-text-size="sm"] .article-card-title {
+  font-size: 0.75rem !important;
+}
+.article-list[data-text-size="lg"] .article-card-title {
+  font-size: 1rem !important;
+}
+
 /* ── Magazine view ────────────────────────────────────────────────────────── */
 
-.article-magazine-item {
-  /* intentionally empty — layout handled inline with Tailwind flex */
+.article-list[data-density="compact"] .article-magazine-item {
+  padding: 0.5rem 0.75rem !important;
+}
+.article-list[data-density="cozy"] .article-magazine-item {
+  padding: 1rem !important;
+}
+.article-list[data-text-size="sm"] .article-magazine-title {
+  font-size: 0.75rem !important;
+}
+.article-list[data-text-size="lg"] .article-magazine-title {
+  font-size: 1rem !important;
+}
+
+/* ── Sidebar scrollbar ────────────────────────────────────────────────────── */
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-base-300);
+  border-radius: 2px;
 }

@@ -63,7 +63,7 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside
           className={`
-            fixed inset-y-0 left-0 z-30 w-72 bg-base-200 transition-transform duration-200
+            fixed inset-y-0 left-0 z-30 w-72 bg-base-200 transition-transform duration-200 overflow-x-hidden
             lg:static lg:[translate:none] lg:z-auto
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           `}
