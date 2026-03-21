@@ -517,6 +517,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/feeds/{id}/view": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Set the article layout mode for a feed subscription */
+    put: operations["update_feed_view"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/feeds/{id}/read": {
     parameters: {
       query?: never;
@@ -681,6 +698,8 @@ export interface components {
       url: string;
       /** Format: date-time */
       verified_at?: string | null;
+      /** @description Article layout mode: list | cards | magazine */
+      view_mode: string;
     };
     FetchHistoryResponse: {
       /** Format: int32 */
@@ -890,6 +909,10 @@ export interface components {
     UpdateFeedNameRequest: {
       /** @description New display name. Pass `null` to clear the override and fall back to the feed's default name. */
       name?: string | null;
+    };
+    UpdateFeedViewRequest: {
+      /** @description Layout mode for this feed's articles. One of: list, cards, magazine. */
+      view_mode: string;
     };
     UpdateFlagRequest: {
       enabled: boolean;
@@ -1941,6 +1964,47 @@ export interface operations {
     };
     responses: {
       /** @description Name updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FeedResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Feed not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  update_feed_view: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Feed ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateFeedViewRequest"];
+      };
+    };
+    responses: {
+      /** @description View mode updated */
       200: {
         headers: {
           [name: string]: unknown;

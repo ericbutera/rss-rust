@@ -6,9 +6,11 @@ import {
   useMarkArticleRead,
   useMarkFeedRead,
   useUnsubscribeFeed,
+  useUpdateFeedView,
   type ArticleResponse,
   type FeedResponse,
 } from "@/lib/queries";
+import { useViewPreferences } from "@/lib/useViewPreferences";
 import { useEffect, useRef, useState } from "react";
 import ArticleList from "./ArticleList";
 import FetchHistoryModal from "./FetchHistoryModal";
@@ -37,6 +39,8 @@ export default function Viewer({
   onUnsubscribed,
 }: ViewerProps) {
   const [onlySaved, setOnlySaved] = useState(false);
+  const { prefs, setDensity, setTextSize } = useViewPreferences();
+  const { mutateAsync: updateFeedView } = useUpdateFeedView();
 
   const {
     data,
@@ -120,6 +124,12 @@ export default function Viewer({
         onUnsubscribe={handleUnsubscribe}
         onlySaved={onlySaved}
         onToggleSaved={() => setOnlySaved((v) => !v)}
+        viewMode={feed.view_mode}
+        onViewModeChange={(mode) => updateFeedView(feed.id, mode)}
+        density={prefs.density}
+        onDensityChange={setDensity}
+        textSize={prefs.textSize}
+        onTextSizeChange={setTextSize}
       />
 
       <div className="flex flex-col flex-1">
@@ -145,6 +155,9 @@ export default function Viewer({
           openArticleId={openArticleId}
           toggleArticle={toggleArticle}
           lastReadAt={feed.last_read_at}
+          viewMode={feed.view_mode}
+          density={prefs.density}
+          textSize={prefs.textSize}
         />
 
         {/* Infinite scroll sentinel */}

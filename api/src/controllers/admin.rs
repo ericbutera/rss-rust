@@ -1,12 +1,12 @@
 use crate::app_error::AppError;
 use crate::entities::{articles, feeds, fetch_history, user_feeds};
 use crate::storage::AppStorage;
-use kaleido::auth::AdminUserContext;
 use axum::{
     extract::{Path, Query, State},
     routing::{get, post, put},
     Json, Router,
 };
+use kaleido::auth::AdminUserContext;
 use kaleido::glass::aggregator::{Aggregator, NamedStat};
 use kaleido::glass::data::pagination::{Paginatable, PaginatedResponse, PaginationParams};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, Set};
@@ -22,7 +22,10 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds/:id/fetch-history", get(list_feed_fetch_history))
         .route("/feeds/:id/fetch-now", post(fetch_feed_now))
         .route("/tasks/fix-unread-drift", post(fix_unread_drift))
-        .route("/tasks/fetch-missing-favicons", post(fetch_missing_favicons))
+        .route(
+            "/tasks/fetch-missing-favicons",
+            post(fetch_missing_favicons),
+        )
 }
 
 /// Get RSS-specific app metrics.
@@ -91,8 +94,6 @@ async fn rss_metrics(db: &sea_orm::DatabaseConnection) -> Vec<NamedStat> {
         ),
     ]
 }
-
-// ── Feeds ─────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AdminFeedResponse {
@@ -277,8 +278,6 @@ async fn list_feed_fetch_history(
 
     Ok(Json(paginated))
 }
-
-// ── Maintenance tasks ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FetchNowResponse {

@@ -87,7 +87,6 @@ impl FeedDiscovery {
     }
 }
 
-
 #[async_trait]
 impl TaskProcessor for FeedDiscovery {
     fn task_type(&self) -> &str {
@@ -123,15 +122,9 @@ impl TaskProcessor for FeedDiscovery {
                     rss_url = %rss_url,
                     "discovered RSS feed"
                 );
-                feeds::Model::update_for_discovery(
-                    db,
-                    p.feed_id,
-                    "rss",
-                    Some(&rss_url),
-                    &page_url,
-                )
-                .await
-                .context("Failed to update feed record after discovery")?;
+                feeds::Model::update_for_discovery(db, p.feed_id, "rss", Some(&rss_url), &page_url)
+                    .await
+                    .context("Failed to update feed record after discovery")?;
 
                 // Re-verify with the correct RSS URL — verifier will also do initial fetch
                 let storage = DurableStorage::new((*self.db).clone());
@@ -176,13 +169,8 @@ impl TaskProcessor for FeedDiscovery {
     }
 }
 
-// ── Testable free functions ───────────────────────────────────────────────────
-
 /// Try to GET `url` and detect whether it serves RSS/Atom content.
-pub(crate) async fn probe_rss(
-    http: &reqwest::Client,
-    url: &str,
-) -> anyhow::Result<Option<String>> {
+pub(crate) async fn probe_rss(http: &reqwest::Client, url: &str) -> anyhow::Result<Option<String>> {
     let resp = match http.get(url).send().await {
         Ok(r) => r,
         Err(_) => return Ok(None),
@@ -199,9 +187,7 @@ pub(crate) async fn probe_rss(
         .unwrap_or("")
         .to_lowercase();
 
-    if content_type.contains("rss")
-        || content_type.contains("atom")
-        || content_type.contains("xml")
+    if content_type.contains("rss") || content_type.contains("atom") || content_type.contains("xml")
     {
         return Ok(Some(url.to_string()));
     }
@@ -222,7 +208,7 @@ pub(crate) async fn run_discovery(
     ollama: &OllamaClient,
     page_url: &str,
 ) -> anyhow::Result<Option<String>> {
-    // ── Step 1: fetch the page ────────────────────────────────────────────
+    // fetch the page
     let resp = http
         .get(page_url)
         .send()
@@ -238,7 +224,7 @@ pub(crate) async fn run_discovery(
 
     let html = resp.text().await.context("Failed to read page body")?;
 
-    // ── Step 2: <link rel="alternate"> ───────────────────────────────────
+    // <link rel="alternate">
     let links = html_extractor::find_rss_links(&html);
     if let Some(href) = links.into_iter().next() {
         let resolved = resolve_url(page_url, &href)?;
@@ -246,7 +232,7 @@ pub(crate) async fn run_discovery(
         return Ok(Some(resolved));
     }
 
-    // ── Step 3: common path probing ───────────────────────────────────────
+    // common path probing
     let origin = base_origin(page_url)?;
     for path in RSS_PATHS {
         let candidate = format!("{origin}{path}");
@@ -256,7 +242,7 @@ pub(crate) async fn run_discovery(
         }
     }
 
-    // ── Step 4: LLM fallback ──────────────────────────────────────────────
+    //  LLM fallback
     let text = html_extractor::html_to_text(&html, 3000);
     if !text.is_empty() {
         let prompt = format!(
@@ -292,8 +278,6 @@ pub(crate) async fn run_discovery(
     Ok(None)
 }
 
-// ── URL helpers ───────────────────────────────────────────────────────────────
-
 fn base_origin(url: &str) -> anyhow::Result<String> {
     let parsed = url::Url::parse(url).context("Invalid URL")?;
     let host = parsed.host_str().unwrap_or("");
@@ -308,11 +292,11 @@ fn resolve_url(base: &str, href: &str) -> anyhow::Result<String> {
         return Ok(href.to_string());
     }
     let base_url = url::Url::parse(base).context("Invalid base URL")?;
-    let resolved = base_url.join(href).context("Failed to resolve relative URL")?;
+    let resolved = base_url
+        .join(href)
+        .context("Failed to resolve relative URL")?;
     Ok(resolved.to_string())
 }
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -327,8 +311,6 @@ mod tests {
             .build()
             .unwrap()
     }
-
-    // ── probe_rss ─────────────────────────────────────────────────────────────
 
     #[tokio::test]
     async fn probe_rss_returns_url_for_rss_content_type() {
@@ -375,13 +357,19 @@ mod tests {
         let result = probe_rss(&http(5), &format!("{}/feed", srv.url()))
             .await
             .unwrap();
-        assert!(result.is_some(), "should detect RSS even with wrong content-type");
+        assert!(
+            result.is_some(),
+            "should detect RSS even with wrong content-type"
+        );
     }
 
     #[tokio::test]
     async fn probe_rss_returns_none_for_404() {
         let mut srv = mockito::Server::new_async().await;
-        srv.mock("GET", "/nope").with_status(404).create_async().await;
+        srv.mock("GET", "/nope")
+            .with_status(404)
+            .create_async()
+            .await;
 
         let result = probe_rss(&http(5), &format!("{}/nope", srv.url()))
             .await
@@ -404,8 +392,6 @@ mod tests {
             .unwrap();
         assert!(result.is_none());
     }
-
-    // ── run_discovery ─────────────────────────────────────────────────────────
 
     #[tokio::test]
     async fn discover_finds_rss_via_link_alternate_tag() {
@@ -474,9 +460,7 @@ mod tests {
                 .await;
         }
 
-        let ollama_body = format!(
-            r#"{{"response":"{{\"feed_url\":\"{feed_url}\"}}"}}"#
-        );
+        let ollama_body = format!(r#"{{"response":"{{\"feed_url\":\"{feed_url}\"}}"}}"#);
         ollama_srv
             .mock("POST", "/api/generate")
             .with_status(200)
@@ -557,19 +541,12 @@ mod tests {
         }
 
         let ollama = OllamaClient::new("http://127.0.0.1:19999".to_string());
-        let result = run_discovery(
-            &http(5),
-            &http(2),
-            &ollama,
-            &format!("{}/", page_srv.url()),
-        )
-        .await
-        .unwrap();
+        let result = run_discovery(&http(5), &http(2), &ollama, &format!("{}/", page_srv.url()))
+            .await
+            .unwrap();
         assert!(result.is_none());
     }
 }
-
-// ── Integration tests (require compose stack: OLLAMA_URL) ─────────────────────
 
 #[cfg(test)]
 mod integration_tests {

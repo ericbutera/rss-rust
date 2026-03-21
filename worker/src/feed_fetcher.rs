@@ -9,6 +9,7 @@
 //! The worker task processors in `tasks::processors` are thin wrappers that
 //! decide *which* feeds to fetch and *when*, then delegate the actual work here.
 
+use crate::html_extractor;
 use anyhow::Context;
 use api::entities::{articles, feeds, fetch_history, user_feeds};
 use feed_rs::model::Entry;
@@ -20,8 +21,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 const FETCH_TIMEOUT: Duration = Duration::from_secs(30);
-
-// ── Data types ────────────────────────────────────────────────────────────────
+const ENRICH_TIMEOUT: Duration = Duration::from_secs(8);
 
 pub(crate) struct FeedFetchResult {
     pub(crate) status: i32,
@@ -36,11 +36,10 @@ pub(crate) struct ArticleData {
     pub(crate) url: String,
     pub(crate) title: Option<String>,
     pub(crate) description: Option<String>,
+    pub(crate) image_url: Option<String>,
     pub(crate) content: Option<String>,
     pub(crate) guid: Option<String>,
 }
-
-// ── Pure / free functions (fully testable without DB or network) ──────────────
 
 fn sanitize_html(html: Option<String>) -> Option<String> {
     html.map(|s| {
@@ -55,6 +54,32 @@ fn sanitize_html(html: Option<String>) -> Option<String> {
 /// Parse raw RSS or Atom bytes into a `feed_rs` document.
 pub(crate) fn parse_rss(bytes: &[u8]) -> anyhow::Result<feed_rs::model::Feed> {
     parser::parse::<&[u8]>(bytes).context("Failed to parse feed content")
+}
+
+/// Extract a best-effort image URL from `Entry.media` structures.
+///
+/// Prefers the first thumbnail's `image.uri`, then any `media:content`
+/// whose `content_type` starts with `image/`.
+fn extract_media_image(entry: &Entry) -> Option<String> {
+    entry.media.iter().find_map(|m| {
+        m.thumbnails
+            .first()
+            .map(|img| img.image.uri.clone())
+            .or_else(|| {
+                m.content.iter().find_map(|c| {
+                    let is_image = c
+                        .content_type
+                        .as_ref()
+                        .map(|ct| ct.to_string().starts_with("image/"))
+                        .unwrap_or(false);
+                    if is_image {
+                        c.url.as_ref().map(|u| u.to_string())
+                    } else {
+                        None
+                    }
+                })
+            })
+    })
 }
 
 /// Extract structured article data from a feed entry.
@@ -81,19 +106,23 @@ pub(crate) fn entry_to_article_data(entry: Entry) -> Option<ArticleData> {
         entry.id.clone()
     });
 
+    let image_url: Option<String> = extract_media_image(&entry);
     let title = entry.title.map(|t| t.content);
+
     let description = sanitize_html(
         entry
             .summary
             .map(|s| s.content)
             .or_else(|| entry.content.as_ref().and_then(|c| c.body.clone())),
     );
+
     let content = sanitize_html(entry.content.and_then(|c| c.body));
 
     Some(ArticleData {
         url,
         title,
         description,
+        image_url,
         content,
         guid,
     })
@@ -158,8 +187,6 @@ pub(crate) async fn fetch_url(
     })
 }
 
-// ── Service ───────────────────────────────────────────────────────────────────
-
 /// Orchestrates fetching a single feed: HTTP → parse → persist → record history.
 pub(crate) struct FeedFetchService {
     db: Arc<DatabaseConnection>,
@@ -200,6 +227,18 @@ impl FeedFetchService {
         Ok(article_count)
     }
 
+    /// Fetch `url` with a short timeout and extract og:image (best-effort).
+    /// Never propagates errors — a failed enrichment is silently ignored.
+    async fn enrich_image(&self, url: &str) -> Option<String> {
+        let client = reqwest::Client::builder()
+            .timeout(ENRICH_TIMEOUT)
+            .user_agent("rss-reader/1.0")
+            .build()
+            .ok()?;
+        let html = client.get(url).send().await.ok()?.text().await.ok()?;
+        html_extractor::extract_article(&html).image_url
+    }
+
     /// Convert a feed entry to article data and persist it.
     /// Returns `true` if a new article was inserted.
     async fn persist_entry(&self, feed_id: i32, entry: Entry) -> anyhow::Result<bool> {
@@ -212,12 +251,22 @@ impl FeedFetchService {
             return Ok(false);
         }
 
-        articles::Model::create(
+        // If the feed doesn't include an image, try fetching the article page
+        // to extract og:image. This is best-effort; failures are ignored.
+        let image_url = if data.image_url.is_some() {
+            data.image_url
+        } else {
+            self.enrich_image(&data.url).await
+        };
+
+        articles::Model::create_full(
             db,
             feed_id,
             data.url,
             data.title,
             data.description,
+            image_url,
+            None, // preview not computed for RSS entries
             data.content,
             data.guid,
         )
@@ -278,8 +327,6 @@ impl FeedFetchService {
     }
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -321,8 +368,6 @@ mod tests {
             .next()
             .expect("test XML should produce at least one entry")
     }
-
-    // ── HTTP fetch (mockito local server — no external network) ───────────────
 
     #[tokio::test]
     async fn test_fetch_url_200_returns_bytes() {
@@ -447,8 +492,6 @@ mod tests {
         assert_eq!(result.etag.as_deref(), Some("\"new-etag-xyz\""));
     }
 
-    // ── RSS / Atom parsing ────────────────────────────────────────────────────
-
     #[test]
     fn test_parse_valid_rss_returns_entries() {
         let feed = parse_rss(MINIMAL_RSS).unwrap();
@@ -484,8 +527,6 @@ mod tests {
     fn test_parse_empty_bytes_returns_error() {
         assert!(parse_rss(b"").is_err());
     }
-
-    // ── Entry → ArticleData conversion ────────────────────────────────────────
 
     #[test]
     fn test_entry_with_link_extracts_url_title_and_guid() {

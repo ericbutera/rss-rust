@@ -6,7 +6,6 @@ import { API_URL } from "./config";
 const fetchClient = createFetchClient({ baseUrl: API_URL });
 export const $api = createClient<paths>(fetchClient);
 
-// ── Type aliases ──────────────────────────────────────────────────────────────
 export type FeedResponse = components["schemas"]["FeedResponse"];
 export type ArticleResponse = components["schemas"]["ArticleResponse"];
 export type ArticlesPage =
@@ -30,8 +29,6 @@ export type NamedStat = components["schemas"]["NamedStat"];
 // `StatResult` was removed from the OpenAPI schema. Define it locally to match
 // the shape expected by kaleido's admin components (value + optional error).
 export type StatResult = { value: number; error?: string | null };
-
-// ── Feed queries ──────────────────────────────────────────────────────────────
 
 export function useFeeds() {
   const resp = $api.useQuery("get", "/feeds", {});
@@ -182,8 +179,6 @@ export function useTaskStatus(taskId: string | null) {
   );
 }
 
-// ── Admin queries ─────────────────────────────────────────────────────────────
-
 export function useAdminFeeds() {
   const resp = $api.useQuery("get", "/admin/feeds", {});
   return { ...resp, data: (resp.data ?? []) as AdminFeed[] };
@@ -223,8 +218,6 @@ export function useAdminAppMetrics() {
   return $api.useQuery("get", "/admin/metrics/app", {});
 }
 
-// ── Invalidation helpers ──────────────────────────────────────────────────────
-
 export function useRenameFeed() {
   const queryClient = useQueryClient();
   const mutation = $api.useMutation("put", "/feeds/{id}/name");
@@ -234,6 +227,21 @@ export function useRenameFeed() {
       await mutation.mutateAsync({
         params: { path: { id: feedId } },
         body: { name },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+    },
+  };
+}
+
+export function useUpdateFeedView() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/feeds/{id}/view");
+  return {
+    ...mutation,
+    mutateAsync: async (feedId: number, viewMode: string): Promise<void> => {
+      await mutation.mutateAsync({
+        params: { path: { id: feedId } },
+        body: { view_mode: viewMode },
       });
       await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
     },

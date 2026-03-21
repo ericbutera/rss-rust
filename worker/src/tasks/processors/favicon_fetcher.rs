@@ -131,8 +131,6 @@ impl TaskProcessor for FaviconFetcher {
         let mut failed = 0usize;
 
         for feed in &pending {
-            // ── Claim the row FIRST to prevent any concurrent task from also
-            //   attempting this feed. ──────────────────────────────────────
             let claim = feeds::ActiveModel {
                 id: Set(feed.id),
                 favicon_fetched_at: Set(Some(Utc::now())),
@@ -143,7 +141,6 @@ impl TaskProcessor for FaviconFetcher {
                 continue;
             }
 
-            // ── Fetch and persist the favicon. ────────────────────────────
             match self.fetch_and_store(feed).await {
                 Some(filename) => {
                     let update = feeds::ActiveModel {

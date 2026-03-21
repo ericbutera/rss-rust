@@ -147,11 +147,7 @@ impl TaskProcessor for PageExtractor {
 
         // source_url is the original listing page URL set during discovery.
         // Fall back to feed.url for robustness.
-        let source_url = feed
-            .source_url
-            .as_deref()
-            .unwrap_or(&feed.url)
-            .to_string();
+        let source_url = feed.source_url.as_deref().unwrap_or(&feed.url).to_string();
 
         tracing::info!(feed_id = p.feed_id, url = %source_url, "extracting articles from page");
 
@@ -167,7 +163,11 @@ impl TaskProcessor for PageExtractor {
             return Ok(());
         }
 
-        tracing::info!(feed_id = p.feed_id, count = links.len(), "article links found");
+        tracing::info!(
+            feed_id = p.feed_id,
+            count = links.len(),
+            "article links found"
+        );
 
         let mut new_count = 0usize;
 
@@ -207,16 +207,9 @@ impl TaskProcessor for PageExtractor {
     }
 }
 
-
-// ── Testable free functions ───────────────────────────────────────────────────
-
 /// Fetch an HTML page and return its body as a string.
 pub(crate) async fn fetch_page(http: &reqwest::Client, url: &str) -> anyhow::Result<String> {
-    let resp = http
-        .get(url)
-        .send()
-        .await
-        .context("HTTP request failed")?;
+    let resp = http.get(url).send().await.context("HTTP request failed")?;
 
     if !resp.status().is_success() {
         return Err(anyhow::anyhow!("HTTP {}", resp.status().as_u16()));
@@ -257,8 +250,6 @@ pub(crate) async fn extract_links(
     }
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -271,8 +262,6 @@ mod tests {
             .build()
             .unwrap()
     }
-
-    // ── fetch_page ────────────────────────────────────────────────────────────
 
     #[tokio::test]
     async fn fetch_page_returns_body_on_200() {
@@ -292,13 +281,14 @@ mod tests {
     #[tokio::test]
     async fn fetch_page_errors_on_404() {
         let mut srv = mockito::Server::new_async().await;
-        srv.mock("GET", "/missing").with_status(404).create_async().await;
+        srv.mock("GET", "/missing")
+            .with_status(404)
+            .create_async()
+            .await;
 
         let result = fetch_page(&http(5), &format!("{}/missing", srv.url())).await;
         assert!(result.is_err());
     }
-
-    // ── extract_links ─────────────────────────────────────────────────────────
 
     #[tokio::test]
     async fn extract_links_parses_valid_json_array() {
@@ -344,7 +334,10 @@ mod tests {
     async fn extract_links_returns_empty_when_ollama_unavailable() {
         let ollama = OllamaClient::new("http://127.0.0.1:19999".to_string());
         let links = extract_links(&ollama, "https://example.com", "<html/>").await;
-        assert!(links.is_empty(), "Should return empty vec when Ollama is down");
+        assert!(
+            links.is_empty(),
+            "Should return empty vec when Ollama is down"
+        );
     }
 
     #[tokio::test]
@@ -363,8 +356,6 @@ mod tests {
         assert!(links.is_empty());
     }
 }
-
-// ── Integration tests (require compose stack: OLLAMA_URL) ─────────────────────
 
 #[cfg(test)]
 mod integration_tests {

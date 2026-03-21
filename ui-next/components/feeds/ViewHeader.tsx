@@ -1,11 +1,14 @@
 "use client";
 
 import type { FeedResponse } from "@/lib/queries";
+import type { Density, TextSize } from "@/lib/useViewPreferences";
 import {
   faBookmark,
   faCircleCheck,
   faClockRotateLeft,
   faPencil,
+  faTableCells,
+  faTableList,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,6 +23,12 @@ interface NavProps {
   onShowReadHistory?: () => void;
   onlySaved?: boolean;
   onToggleSaved?: () => void;
+  viewMode?: string;
+  onViewModeChange?: (mode: string) => void;
+  density?: Density;
+  onDensityChange?: (d: Density) => void;
+  textSize?: TextSize;
+  onTextSizeChange?: (s: TextSize) => void;
 }
 
 export default function ViewHeader({
@@ -29,6 +38,12 @@ export default function ViewHeader({
   onUnsubscribe,
   onlySaved,
   onToggleSaved,
+  viewMode = "list",
+  onViewModeChange,
+  density = "default",
+  onDensityChange,
+  textSize = "base",
+  onTextSizeChange,
 }: NavProps) {
   const [renaming, setRenaming] = useState(false);
 
@@ -45,6 +60,94 @@ export default function ViewHeader({
 
       {/* Right side: Actions */}
       <div className="flex-none flex items-center gap-1">
+        {/* Combined appearance + layout dropdown */}
+        {(onViewModeChange || onTextSizeChange || onDensityChange) && (
+          <div className="dropdown dropdown-end">
+            <details>
+              <summary className="btn btn-ghost btn-sm list-none px-2 font-bold">
+                Aa
+              </summary>
+              <div className="dropdown-content bg-base-200 rounded-box shadow p-3 w-56 z-[1] mt-2 flex flex-col gap-4">
+                {/* Layout group */}
+                {onViewModeChange && (
+                  <div>
+                    <p className="text-xs font-semibold opacity-50 uppercase tracking-wider mb-1.5">
+                      Layout
+                    </p>
+                    <div className="join w-full">
+                      <button
+                        className={`btn btn-xs join-item flex-1 gap-1 ${viewMode === "list" ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => onViewModeChange("list")}
+                      >
+                        <FontAwesomeIcon icon={faTableList} /> List
+                      </button>
+                      <button
+                        className={`btn btn-xs join-item flex-1 gap-1 ${viewMode === "cards" ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => onViewModeChange("cards")}
+                      >
+                        <FontAwesomeIcon icon={faTableCells} /> Cards
+                      </button>
+                      <button
+                        className={`btn btn-xs join-item flex-1 gap-1 ${viewMode === "magazine" ? "btn-primary" : "btn-ghost"}`}
+                        onClick={() => onViewModeChange("magazine")}
+                      >
+                        <FontAwesomeIcon icon={faTableList} /> Mag
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {/* Text size group */}
+                {onTextSizeChange && (
+                  <div>
+                    <p className="text-xs font-semibold opacity-50 uppercase tracking-wider mb-1.5">
+                      Text
+                    </p>
+                    <div className="join w-full">
+                      {(["sm", "base", "lg"] as TextSize[]).map((s) => (
+                        <button
+                          key={s}
+                          className={`btn btn-xs join-item flex-1 ${textSize === s ? "btn-primary" : "btn-ghost"}`}
+                          onClick={() => onTextSizeChange(s)}
+                        >
+                          {s === "sm"
+                            ? "Small"
+                            : s === "base"
+                              ? "Medium"
+                              : "Large"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Density group */}
+                {onDensityChange && (
+                  <div>
+                    <p className="text-xs font-semibold opacity-50 uppercase tracking-wider mb-1.5">
+                      Density
+                    </p>
+                    <div className="join w-full">
+                      {(["compact", "default", "cozy"] as Density[]).map(
+                        (d) => (
+                          <button
+                            key={d}
+                            className={`btn btn-xs join-item flex-1 ${density === d ? "btn-primary" : "btn-ghost"}`}
+                            onClick={() => onDensityChange(d)}
+                          >
+                            {d === "compact"
+                              ? "Compact"
+                              : d === "default"
+                                ? "Normal"
+                                : "Cozy"}
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </details>
+          </div>
+        )}
         {/* Saved filter toggle */}
         {onToggleSaved !== undefined && (
           <div
@@ -76,8 +179,17 @@ export default function ViewHeader({
         <div className="dropdown dropdown-end">
           <details>
             <summary className="btn btn-ghost btn-sm btn-circle list-none">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
-                <path fillRule="evenodd" d="M10.5 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm0 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm0 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Z" clipRule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="size-4"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10.5 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm0 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Zm0 6a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0Z"
+                  clipRule="evenodd"
+                />
               </svg>
             </summary>
             <ul className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52 z-[1] mt-2">

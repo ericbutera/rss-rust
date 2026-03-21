@@ -62,6 +62,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/feeds/reorder", put(reorder_feeds))
         .route("/feeds/:id", delete(unsubscribe_feed))
         .route("/feeds/:id/name", put(rename_feed))
+        .route("/feeds/:id/view", put(update_feed_view))
         .route("/feeds/:id/articles", get(list_articles))
         .route("/feeds/:id/read", put(mark_feed_read))
         .route("/feeds/:id/fetch-history", get(list_fetch_history))
@@ -70,8 +71,6 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/articles/:id/read", put(mark_article_read))
         .route("/articles/:id/save", put(toggle_save_article))
 }
-
-// ── Request / Response types ──────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Deserialize, Serialize, Validate, ToSchema)]
 pub struct CreateFeedRequest {
@@ -101,6 +100,14 @@ pub struct FeedResponse {
     pub sort_order: i32,
     /// API path to the feed's favicon (e.g. /api/favicons/feed_1.ico), or null if unavailable
     pub favicon_url: Option<String>,
+    /// Article layout mode: list | cards | magazine
+    pub view_mode: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateFeedViewRequest {
+    /// Layout mode for this feed's articles. One of: list, cards, magazine.
+    pub view_mode: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -124,6 +131,7 @@ impl FeedResponse {
         unread_count: u64,
         sort_order: i32,
         name_override: Option<String>,
+        view_mode: String,
     ) -> Self {
         FeedResponse {
             id: m.id,
@@ -138,6 +146,7 @@ impl FeedResponse {
             unread_count,
             sort_order,
             favicon_url: m.favicon_url,
+            view_mode,
         }
     }
 }
@@ -234,8 +243,6 @@ pub struct TaskStatusResponse {
     pub max_attempts: i32,
 }
 
-// ── Handlers ──────────────────────────────────────────────────────────────────
-
 /// List the current user's subscribed feeds
 #[utoipa::path(
     get,
@@ -276,6 +283,10 @@ pub async fn list_feeds(
         .iter()
         .map(|uf| (uf.feed_id, uf.name_override.clone()))
         .collect();
+    let view_mode_map: HashMap<i32, String> = user_feed_rows
+        .iter()
+        .map(|uf| (uf.feed_id, uf.view_mode.clone()))
+        .collect();
     let feed_ids: Vec<i32> = user_feed_rows.into_iter().map(|uf| uf.feed_id).collect();
 
     let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids)
@@ -296,6 +307,10 @@ pub async fn list_feeds(
             let unread_count = unread_map.get(&f.id).copied().unwrap_or(0).max(0) as u64;
             let sort_order = sort_order_map.get(&f.id).copied().unwrap_or(0);
             let name_override = name_override_map.get(&f.id).cloned().flatten();
+            let view_mode = view_mode_map
+                .get(&f.id)
+                .cloned()
+                .unwrap_or_else(|| "list".to_string());
             FeedResponse::from_model(
                 f,
                 last_read_at,
@@ -304,6 +319,7 @@ pub async fn list_feeds(
                 unread_count,
                 sort_order,
                 name_override,
+                view_mode,
             )
         })
         .collect();
@@ -388,7 +404,16 @@ pub async fn create_feed(
     Ok((
         StatusCode::CREATED,
         Json(CreateFeedResponse {
-            feed: FeedResponse::from_model(feed, None, chrono::Utc::now(), None, 0, 0, None),
+            feed: FeedResponse::from_model(
+                feed,
+                None,
+                chrono::Utc::now(),
+                None,
+                0,
+                0,
+                None,
+                "list".to_string(),
+            ),
             task_id,
         }),
     ))
@@ -460,6 +485,60 @@ pub async fn rename_feed(
         uf.unread_count.max(0) as u64,
         uf.sort_order,
         uf.name_override,
+        uf.view_mode,
+    )))
+}
+
+/// Set the article layout mode for a feed subscription
+#[utoipa::path(
+    put,
+    path = "/feeds/{id}/view",
+    params(
+        ("id" = i32, Path, description = "Feed ID")
+    ),
+    request_body = UpdateFeedViewRequest,
+    responses(
+        (status = 200, description = "View mode updated", body = FeedResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Feed not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn update_feed_view(
+    State(state): State<Arc<AppStorage>>,
+    user_ctx: UserContext<AppStorage>,
+    Path(id): Path<i32>,
+    Json(payload): Json<UpdateFeedViewRequest>,
+) -> Result<Json<FeedResponse>, AppError> {
+    let valid_modes = ["list", "cards", "magazine"];
+    if !valid_modes.contains(&payload.view_mode.as_str()) {
+        return Err(AppError::bad_request(format!(
+            "view_mode must be one of: {}",
+            valid_modes.join(", ")
+        )));
+    }
+
+    let db = &state.db;
+    let user_id = user_ctx.user.id;
+
+    let uf = user_feeds::Model::set_view_mode(db, user_id, id, &payload.view_mode)
+        .await?
+        .ok_or_else(|| AppError::not_found("Feed subscription not found"))?;
+
+    let feed = feeds::Model::find_by_id(db, id)
+        .await?
+        .ok_or_else(|| AppError::not_found("Feed not found"))?;
+
+    Ok(Json(FeedResponse::from_model(
+        feed,
+        uf.all_articles_read_at,
+        uf.created_at,
+        None,
+        uf.unread_count.max(0) as u64,
+        uf.sort_order,
+        uf.name_override,
+        uf.view_mode,
     )))
 }
 

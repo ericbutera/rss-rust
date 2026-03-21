@@ -7,8 +7,6 @@
 
 use scraper::{Html, Selector};
 
-// ── Feed link discovery ───────────────────────────────────────────────────────
-
 /// Return all RSS/Atom feed URLs declared via `<link rel="alternate">` in the
 /// document `<head>`.  Relative hrefs are returned as-is; callers must resolve
 /// them against the page base URL.
@@ -26,8 +24,6 @@ pub fn find_rss_links(html: &str) -> Vec<String> {
         .filter_map(|e| e.value().attr("href").map(|h| h.to_string()))
         .collect()
 }
-
-// ── Text extraction for LLM ───────────────────────────────────────────────────
 
 /// Strip an HTML document down to plain text suitable for an LLM prompt.
 ///
@@ -50,8 +46,6 @@ pub fn html_to_text(html: &str, max_chars: usize) -> String {
 
     text.chars().take(max_chars).collect()
 }
-
-// ── Article content extraction ────────────────────────────────────────────────
 
 pub struct ExtractedArticle {
     pub title: Option<String>,
@@ -114,8 +108,6 @@ pub fn extract_article(html: &str) -> ExtractedArticle {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 fn meta_property(doc: &Html, property: &str) -> Option<String> {
     let sel_str = format!("meta[property='{property}']");
     let sel = Selector::parse(&sel_str).ok()?;
@@ -146,8 +138,6 @@ fn select_first_text(doc: &Html, selector: &str) -> Option<String> {
 mod tests {
     use super::*;
     use crate::test_fixtures::{ARTICLE_WITH_OG_TAGS, BLOG_LISTING_CLEAR};
-
-    // ── find_rss_links ────────────────────────────────────────────────────────
 
     #[test]
     fn find_rss_links_returns_rss_href() {
@@ -183,8 +173,6 @@ mod tests {
         assert!(links.is_empty());
     }
 
-    // ── html_to_text ──────────────────────────────────────────────────────────
-
     #[test]
     fn html_to_text_extracts_paragraph_content() {
         let html = "<html><body><p>Hello world</p></body></html>";
@@ -214,8 +202,6 @@ mod tests {
         let text = html_to_text(html, 1000);
         assert!(text.is_empty());
     }
-
-    // ── extract_article ───────────────────────────────────────────────────────
 
     #[test]
     fn extract_article_reads_og_tags() {

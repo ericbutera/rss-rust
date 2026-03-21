@@ -110,3 +110,46 @@ body {
   border-color: var(--color-base-300);
   margin: 1em 0;
 }
+
+/* ── View preferences: density ─────────────────────────────────────────────── */
+
+.article-list[data-density="compact"] .collapse-title {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  min-height: 2rem;
+}
+
+.article-list[data-density="cozy"] .collapse-title {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* ── View preferences: text size ──────────────────────────────────────────── */
+
+.article-list[data-text-size="sm"] .collapse-title {
+  font-size: 0.8125rem;
+}
+.article-list[data-text-size="sm"] .article-body {
+  font-size: 0.8125rem;
+}
+
+.article-list[data-text-size="lg"] .collapse-title {
+  font-size: 1.0625rem;
+}
+.article-list[data-text-size="lg"] .article-body {
+  font-size: 1rem;
+}
+
+/* ── Cards view ───────────────────────────────────────────────────────────── */
+
+.article-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ── Magazine view ────────────────────────────────────────────────────────── */
+
+.article-magazine-item {
+  /* intentionally empty — layout handled inline with Tailwind flex */
+}
