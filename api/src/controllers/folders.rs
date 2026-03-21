@@ -23,6 +23,7 @@ pub fn routes() -> Router<Arc<AppStorage>> {
         .route("/folders", post(create_folder))
         .route("/folders/:id", delete(delete_folder))
         .route("/folders/:id/name", put(rename_folder))
+        .route("/folders/:id/view", put(update_folder_view))
         .route("/folders/:id/articles", get(list_folder_articles))
         .route("/feeds/:id/folder", put(assign_feed_to_folder))
 }
@@ -34,6 +35,7 @@ pub struct FolderResponse {
     pub sort_order: i32,
     /// Total unread article count across all feeds in this folder
     pub unread_count: u64,
+    pub view_mode: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -46,6 +48,11 @@ pub struct CreateFolderRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct RenameFolderRequest {
     pub name: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateFolderViewRequest {
+    pub view_mode: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -82,6 +89,7 @@ pub async fn list_folders(
             sort_order: f.sort_order,
             // Unread counts are computed client-side instead of here.
             unread_count: 0,
+            view_mode: f.view_mode,
             created_at: f.created_at,
             updated_at: f.updated_at,
         })
@@ -119,6 +127,7 @@ pub async fn create_folder(
             name: folder.name,
             sort_order: folder.sort_order,
             unread_count: 0,
+            view_mode: folder.view_mode,
             created_at: folder.created_at,
             updated_at: folder.updated_at,
         }),
@@ -196,6 +205,55 @@ pub async fn rename_folder(
         name: folder.name,
         sort_order: folder.sort_order,
         unread_count: 0,
+        view_mode: folder.view_mode,
+        created_at: folder.created_at,
+        updated_at: folder.updated_at,
+    }))
+}
+
+/// Set the article layout mode for a folder
+#[utoipa::path(
+    put,
+    path = "/folders/{id}/view",
+    params(
+        ("id" = i32, Path, description = "Folder ID")
+    ),
+    request_body = UpdateFolderViewRequest,
+    responses(
+        (status = 200, description = "Folder view mode updated", body = FolderResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Folder not found"),
+    ),
+    security(("Bearer" = [])),
+    tag = "feeds"
+)]
+pub async fn update_folder_view(
+    State(state): State<Arc<AppStorage>>,
+    folder_ctx: FolderContext,
+    Json(payload): Json<UpdateFolderViewRequest>,
+) -> Result<Json<FolderResponse>, AppError> {
+    let valid_modes = ["list", "cards", "magazine"];
+    if !valid_modes.contains(&payload.view_mode.as_str()) {
+        return Err(AppError::bad_request(format!(
+            "view_mode must be one of: {}",
+            valid_modes.join(", ")
+        )));
+    }
+
+    let db = &state.db;
+    let id = folder_ctx.folder.id;
+    let user_id = folder_ctx.user_id;
+
+    let folder = feed_folders::Model::set_view_mode(db, id, user_id, &payload.view_mode)
+        .await?
+        .ok_or_else(|| AppError::not_found("Folder not found"))?;
+
+    Ok(Json(FolderResponse {
+        id: folder.id,
+        name: folder.name,
+        sort_order: folder.sort_order,
+        unread_count: 0,
+        view_mode: folder.view_mode,
         created_at: folder.created_at,
         updated_at: folder.updated_at,
     }))

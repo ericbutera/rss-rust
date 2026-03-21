@@ -128,6 +128,10 @@ export function useMarkArticleRead() {
               queryKey: ["get", "/feeds"],
             });
           }
+          // Always refresh folder article lists and folder unread counts so that
+          // marking an article read from a folder view updates immediately.
+          queryClient.invalidateQueries({ queryKey: ["folders"] });
+          queryClient.invalidateQueries({ queryKey: ["get", "/folders"] });
         },
       });
     },
@@ -245,6 +249,21 @@ export function useUpdateFeedView() {
         body: { view_mode: viewMode },
       });
       await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+    },
+  };
+}
+
+export function useUpdateFolderView() {
+  const queryClient = useQueryClient();
+  const mutation = $api.useMutation("put", "/folders/{id}/view");
+  return {
+    ...mutation,
+    mutateAsync: async (folderId: number, viewMode: string): Promise<void> => {
+      await mutation.mutateAsync({
+        params: { path: { id: folderId } },
+        body: { view_mode: viewMode },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["get", "/folders"] });
     },
   };
 }

@@ -6,6 +6,7 @@ import {
   useFolderArticles,
   useMarkArticleRead,
   useMarkFolderRead,
+  useUpdateFolderView,
   type ArticleResponse,
   type FolderResponse,
 } from "@/lib/queries";
@@ -26,8 +27,8 @@ export default function FolderViewer({
   onToggleArticle,
 }: FolderViewerProps) {
   const [onlySaved, setOnlySaved] = useState(false);
-  const [viewMode, setViewMode] = useState("list");
   const { prefs, setDensity, setTextSize } = useViewPreferences();
+  const { mutateAsync: updateFolderView } = useUpdateFolderView();
   const { data: feeds } = useFeeds();
 
   const {
@@ -89,8 +90,8 @@ export default function FolderViewer({
         onMarkAllRead={handleMarkAllRead}
         onlySaved={onlySaved}
         onToggleSaved={() => setOnlySaved((v) => !v)}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        viewMode={folder.view_mode}
+        onViewModeChange={(mode) => updateFolderView(folder.id, mode)}
         density={prefs.density}
         onDensityChange={setDensity}
         textSize={prefs.textSize}
@@ -117,7 +118,7 @@ export default function FolderViewer({
             articles={articles}
             openArticleId={openArticleId}
             toggleArticle={toggleArticle}
-            viewMode={viewMode}
+            viewMode={folder.view_mode}
             density={prefs.density}
             textSize={prefs.textSize}
           />

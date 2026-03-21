@@ -30,7 +30,6 @@ import {
   faChevronDown,
   faChevronRight,
   faFolder,
-  faGripVertical,
   faLinkSlash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -213,11 +212,7 @@ export default function FeedList({
       {/* Ghost image while dragging */}
       <DragOverlay>
         {activeFeed && (
-          <div className="bg-base-200 rounded-btn px-2 py-1 text-sm shadow-lg opacity-90 flex items-center gap-2">
-            <FontAwesomeIcon
-              icon={faGripVertical}
-              className="text-xs opacity-50"
-            />
+          <div className="bg-base-200 rounded-btn px-2 py-1 text-sm shadow-lg opacity-90">
             {activeFeed.name ?? activeFeed.url}
           </div>
         )}

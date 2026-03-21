@@ -5,7 +5,7 @@ import type { FeedResponse } from "@/lib/queries";
 import type { Verifications } from "@/lib/usePendingVerifications";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { faGripVertical, faRss } from "@fortawesome/free-solid-svg-icons";
+import { faRss } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useCallback } from "react";
 import VerificationIndicator from "./VerificationIndicator";
@@ -59,19 +59,12 @@ export default function FeedListItem({
   return (
     <li ref={setNodeRef} style={style}>
       <div
-        className={`tooltip tooltip-right group flex items-center gap-2 px-2 py-1 rounded-btn cursor-pointer ${isSelected ? "active" : ""}`}
+        className={`tooltip tooltip-right group flex items-center gap-2 px-2 py-1 rounded-btn cursor-grab active:cursor-grabbing touch-none ${isDragging ? "opacity-40" : ""} ${isSelected ? "active" : ""}`}
         data-tip={label}
         onClick={() => onSelectFeed(isSelected ? null : feed)}
+        {...attributes}
+        {...listeners}
       >
-        <button
-          className="shrink-0 cursor-grab active:cursor-grabbing touch-none opacity-30 hover:opacity-70 p-0.5"
-          onClick={(e) => e.stopPropagation()}
-          {...attributes}
-          {...listeners}
-          aria-label="Drag to reorder"
-        >
-          <FontAwesomeIcon icon={faGripVertical} className="text-xs" />
-        </button>
         {feed.favicon_url ? (
           <img
             src={`${API_URL}/favicons/${feed.favicon_url}`}

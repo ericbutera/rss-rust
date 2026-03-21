@@ -637,6 +637,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/folders/{id}/view": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Set the article layout mode for a folder */
+    put: operations["update_folder_view"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/oauth/{provider}": {
     parameters: {
       query?: never;
@@ -842,6 +859,7 @@ export interface components {
        * @description Total unread article count across all feeds in this folder
        */
       unread_count: number;
+      view_mode: string;
       /** Format: date-time */
       updated_at: string;
     };
@@ -989,6 +1007,9 @@ export interface components {
     };
     RenameFolderRequest: {
       name: string;
+    };
+    UpdateFolderViewRequest: {
+      view_mode: string;
     };
     ReorderFeedItem: {
       /** Format: int32 */
@@ -2377,6 +2398,47 @@ export interface operations {
     };
     responses: {
       /** @description Folder renamed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FolderResponse"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Folder not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  update_folder_view: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Folder ID */
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateFolderViewRequest"];
+      };
+    };
+    responses: {
+      /** @description Folder view mode updated */
       200: {
         headers: {
           [name: string]: unknown;

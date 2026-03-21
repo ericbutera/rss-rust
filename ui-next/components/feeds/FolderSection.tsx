@@ -45,8 +45,9 @@ export default function FolderSection({
   });
 
   return (
-    <li ref={setDropRef}>
+    <li>
       <div
+        ref={setDropRef}
         className={`flex items-center gap-2 px-2 py-1 rounded-btn cursor-pointer transition-colors ${isSelected ? "active" : ""} ${isOver ? "bg-primary/20 ring-1 ring-primary" : ""}`}
         onClick={() => onSelectFolder(isSelected ? null : folder)}
       >
@@ -83,7 +84,7 @@ export default function FolderSection({
       </div>
 
       {expanded && feeds.length > 0 && (
-        <ul className="menu menu-sm pl-4 gap-0.5">
+        <ul className="menu menu-sm pl-1 gap-0.5">
           <SortableContext
             items={feeds.map((f) => f.id)}
             strategy={verticalListSortingStrategy}

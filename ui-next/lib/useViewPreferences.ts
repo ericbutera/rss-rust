@@ -10,7 +10,10 @@ export interface ViewPreferences {
   textSize: TextSize;
 }
 
-const DEFAULTS: ViewPreferences = { density: "default", textSize: "base" };
+const DEFAULTS: ViewPreferences = {
+  density: "default",
+  textSize: "base",
+};
 
 function readPrefs(): ViewPreferences {
   if (typeof window === "undefined") return DEFAULTS;

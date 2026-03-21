@@ -13,6 +13,7 @@ mod m20260318_000000_add_favicon_to_feeds;
 mod m20260320_000000_add_view_mode_to_user_feeds;
 mod m20260320_100000_create_feed_folders;
 mod m20260320_200000_add_folder_id_to_user_feeds;
+mod m20260321_000000_add_view_mode_to_feed_folders;
 
 pub struct Migrator;
 
@@ -54,6 +55,9 @@ impl MigratorTrait for Migrator {
         locals.push(Box::new(m20260320_100000_create_feed_folders::Migration));
         locals.push(Box::new(
             m20260320_200000_add_folder_id_to_user_feeds::Migration,
+        ));
+        locals.push(Box::new(
+            m20260321_000000_add_view_mode_to_feed_folders::Migration,
         ));
 
         locals.sort_by_key(|m| m.name().to_string());
