@@ -1,5 +1,6 @@
 "use client";
 
+import RequireAuth from "@/components/auth/RequireAuth";
 import Menu from "@/components/feeds/Menu";
 import Layout from "@/components/Layout";
 import { useFeeds, type FeedResponse } from "@/lib/queries";
@@ -8,7 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
-export default function FeedsLayout({ children }: { children: ReactNode }) {
+function FeedsLayoutInner({ children }: { children: ReactNode }) {
   const params = useParams<{ feedId?: string }>();
   const router = useRouter();
   const { data: feeds } = useFeeds();
@@ -69,5 +70,13 @@ export default function FeedsLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     </Layout>
+  );
+}
+
+export default function FeedsLayout({ children }: { children: ReactNode }) {
+  return (
+    <RequireAuth>
+      <FeedsLayoutInner>{children}</FeedsLayoutInner>
+    </RequireAuth>
   );
 }
