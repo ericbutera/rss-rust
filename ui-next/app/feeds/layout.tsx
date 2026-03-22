@@ -51,7 +51,7 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
 
   return (
     <Layout>
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 h-full overflow-hidden">
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div
@@ -64,7 +64,7 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
         <aside
           className={`
             fixed inset-y-0 left-0 z-30 w-72 bg-base-200 transition-transform duration-200 overflow-x-hidden
-            lg:static lg:[translate:none] lg:z-auto
+            lg:static lg:h-full lg:overflow-y-auto lg:[translate:none] lg:z-auto
             ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           `}
         >

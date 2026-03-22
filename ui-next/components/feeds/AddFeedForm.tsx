@@ -8,7 +8,10 @@ interface AddFeedFormProps {
   onVerificationAdded: (feedId: number, taskId: string) => void;
 }
 
-export default function AddFeedForm({ onClose, onVerificationAdded }: AddFeedFormProps) {
+export default function AddFeedForm({
+  onClose,
+  onVerificationAdded,
+}: AddFeedFormProps) {
   const { mutateAsync: createFeed, isPending } = useCreateFeed();
 
   const [newUrl, setNewUrl] = useState("");

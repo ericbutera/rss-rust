@@ -6,10 +6,12 @@ import {
   useFolderArticles,
   useMarkArticleRead,
   useMarkFolderRead,
+  useToggleSaveArticle,
   useUpdateFolderView,
   type ArticleResponse,
   type FolderResponse,
 } from "@/lib/queries";
+import { useArticleKeyboardNav } from "@/lib/useArticleKeyboardNav";
 import { useViewPreferences } from "@/lib/useViewPreferences";
 import { useEffect, useRef, useState } from "react";
 import ArticleList from "./ArticleList";
@@ -82,6 +84,14 @@ export default function FolderViewer({
   }
 
   const articles = data?.pages.flatMap((p) => p.data) ?? [];
+  const { mutate: toggleSave } = useToggleSaveArticle();
+
+  useArticleKeyboardNav({
+    articles,
+    openArticleId,
+    onToggleArticle,
+    onToggleSave: toggleSave,
+  });
 
   return (
     <div className="flex flex-col min-h-full">

@@ -144,6 +144,31 @@ export function useToggleSaveArticle() {
   return {
     ...mutation,
     mutate: (articleId: number, feedId: number) => {
+      // Optimistic update: flip saved_at immediately in all cached article pages
+      // (covers both feed-level and folder-level article caches).
+      const now = new Date().toISOString();
+      type PagedArticles = { pages: { data: ArticleResponse[] }[] };
+      const flipArticle = (a: ArticleResponse): ArticleResponse =>
+        a.id === articleId ? { ...a, saved_at: a.saved_at ? null : now } : a;
+      const flipPages = (old: PagedArticles | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((p) => ({
+            ...p,
+            data: p.data.map(flipArticle),
+          })),
+        };
+      };
+      queryClient.setQueriesData<PagedArticles>(
+        { queryKey: ["feeds", feedId, "articles"], exact: false },
+        flipPages,
+      );
+      queryClient.setQueriesData<PagedArticles>(
+        { queryKey: ["folders"], exact: false },
+        flipPages,
+      );
+
       mutation.mutate(
         { params: { path: { id: articleId } } },
         {
@@ -151,6 +176,18 @@ export function useToggleSaveArticle() {
             queryClient.invalidateQueries({
               queryKey: ["feeds", feedId, "articles"],
             });
+            queryClient.invalidateQueries({ queryKey: ["folders"] });
+          },
+          onError: () => {
+            // Revert: flip back (toggle is its own inverse)
+            queryClient.setQueriesData<PagedArticles>(
+              { queryKey: ["feeds", feedId, "articles"], exact: false },
+              flipPages,
+            );
+            queryClient.setQueriesData<PagedArticles>(
+              { queryKey: ["folders"], exact: false },
+              flipPages,
+            );
           },
         },
       );

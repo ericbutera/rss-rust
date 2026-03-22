@@ -148,6 +148,7 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
 
 /** Small feed source label — shown in folder views where articles come from multiple feeds. */
 function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
+  const [imgError, setImgError] = useState(false);
   if (!feed) return null;
   const name =
     feed.name ??
@@ -160,7 +161,7 @@ function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
     })();
   return (
     <span className="flex items-center gap-1 text-xs opacity-40 shrink-0 max-w-[100px]">
-      {feed.favicon_url ? (
+      {feed.favicon_url && !imgError ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`${API_URL}/favicons/${feed.favicon_url}`}
@@ -168,6 +169,7 @@ function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
           width={12}
           height={12}
           className="w-3 h-3 shrink-0"
+          onError={() => setImgError(true)}
         />
       ) : (
         <FontAwesomeIcon icon={faRss} className="shrink-0" />

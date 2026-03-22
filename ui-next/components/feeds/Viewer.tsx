@@ -6,11 +6,13 @@ import {
   useFeedArticles,
   useMarkArticleRead,
   useMarkFeedRead,
+  useToggleSaveArticle,
   useUnsubscribeFeed,
   useUpdateFeedView,
   type ArticleResponse,
   type FeedResponse,
 } from "@/lib/queries";
+import { useArticleKeyboardNav } from "@/lib/useArticleKeyboardNav";
 import { useViewPreferences } from "@/lib/useViewPreferences";
 import { useEffect, useRef, useState } from "react";
 import ArticleList from "./ArticleList";
@@ -97,6 +99,8 @@ export default function Viewer({
     onUnsubscribed();
   }
 
+  const { mutate: toggleSave } = useToggleSaveArticle();
+
   const pagedArticles = data?.pages.flatMap((p) => p.data) ?? [];
 
   // Deep-link: if the article isn't in the paged list, fetch it directly.
@@ -115,6 +119,14 @@ export default function Viewer({
         ...pagedArticles.filter((a) => a.id !== openArticleId),
       ]
     : pagedArticles;
+
+  useArticleKeyboardNav({
+    articles,
+    openArticleId,
+    onToggleArticle,
+    onToggleSave: toggleSave,
+    feedId: feed.id,
+  });
 
   return (
     <div className="flex flex-col min-h-full">
