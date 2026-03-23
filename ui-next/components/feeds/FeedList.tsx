@@ -170,7 +170,7 @@ export default function FeedList({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <ul className="menu menu-sm w-full gap-0.5">
+      <ul className="menu menu-sm w-full p-0 gap-0.5">
         {/* Folders with their feeds */}
         {folders.map((folder) => (
           <FolderSection

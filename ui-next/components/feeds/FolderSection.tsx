@@ -45,10 +45,10 @@ export default function FolderSection({
   });
 
   return (
-    <li>
+    <li className="w-full">
       <div
         ref={setDropRef}
-        className={`flex items-center gap-2 px-2 py-1 rounded-btn cursor-pointer transition-colors ${isSelected ? "active" : ""} ${isOver ? "bg-primary/20 ring-1 ring-primary" : ""}`}
+        className={`relative flex w-full items-center gap-2 px-2 py-1 pr-10 rounded-btn cursor-pointer transition-colors ${isSelected ? "active" : ""} ${isOver ? "bg-primary/20 ring-1 ring-primary" : ""}`}
         onClick={() => onSelectFolder(isSelected ? null : folder)}
       >
         <button
@@ -77,14 +77,14 @@ export default function FolderSection({
           </span>
         )}
         {!isOver && hasUnread && (
-          <span className="badge badge-primary badge-sm shrink-0 ml-auto">
+          <span className="badge badge badge-sm absolute right-2 top-1/2 -translate-y-1/2">
             {folder.unread_count > 99 ? "99+" : folder.unread_count}
           </span>
         )}
       </div>
 
       {expanded && feeds.length > 0 && (
-        <ul className="menu menu-sm pl-1 gap-0.5">
+        <ul className="menu menu-sm w-full p-0 ml-0 pl-0 gap-0.5">
           <SortableContext
             items={feeds.map((f) => f.id)}
             strategy={verticalListSortingStrategy}
@@ -94,6 +94,7 @@ export default function FolderSection({
                 key={feed.id}
                 feed={feed}
                 isSelected={selectedFeed?.id === feed.id}
+                isNested
                 onSelectFeed={onSelectFeed}
                 taskId={verifications[feed.id] ?? null}
                 onRemoveVerification={onRemoveVerification}

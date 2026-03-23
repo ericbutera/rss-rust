@@ -13,6 +13,7 @@ import VerificationIndicator from "./VerificationIndicator";
 interface SortableFeedItemProps {
   feed: FeedResponse;
   isSelected: boolean;
+  isNested?: boolean;
   onSelectFeed: (feed: FeedResponse | null) => void;
   taskId: string | null;
   onRemoveVerification: (id: number) => void;
@@ -21,6 +22,7 @@ interface SortableFeedItemProps {
 export default function FeedListItem({
   feed,
   isSelected,
+  isNested = false,
   onSelectFeed,
   taskId,
   onRemoveVerification,
@@ -57,9 +59,9 @@ export default function FeedListItem({
   const hasUnread = feed.unread_count > 0;
 
   return (
-    <li ref={setNodeRef} style={style}>
+    <li ref={setNodeRef} style={style} className="w-full">
       <div
-        className={`group flex items-center gap-2 px-2 py-1 rounded-btn cursor-grab active:cursor-grabbing touch-none ${isDragging ? "opacity-40" : ""} ${isSelected ? "active" : ""}`}
+        className={`group relative flex w-full items-center gap-2 px-2 py-1 pr-10 rounded-btn cursor-grab active:cursor-grabbing touch-none ${isNested ? "pl-7" : ""} ${isDragging ? "opacity-40" : ""} ${isSelected ? "active" : ""}`}
         onClick={() => onSelectFeed(isSelected ? null : feed)}
         {...attributes}
         {...listeners}
@@ -96,7 +98,7 @@ export default function FeedListItem({
           />
         )}
         {hasUnread && (
-          <span className="badge badge-primary badge-sm shrink-0 ml-auto">
+          <span className="badge badge-xs badge-soft badge-ghost absolute right-2 top-1/2 -translate-y-1/2">
             {feed.unread_count > 99 ? "99+" : feed.unread_count}
           </span>
         )}
