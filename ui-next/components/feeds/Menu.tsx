@@ -2,8 +2,10 @@
 
 import { type FeedResponse, type FolderResponse } from "@/lib/queries";
 import { usePendingVerifications } from "@/lib/usePendingVerifications";
+import { auth } from "@ericbutera/kaleido";
 import { faFolder, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Link from "next/link";
 import { useState } from "react";
 import AddFeedForm from "./AddFeedForm";
 import CreateFolderForm from "./CreateFolderForm";
@@ -22,6 +24,9 @@ export default function Menu({
   onSelectFeed,
   onSelectFolder,
 }: MenuProps) {
+  const authApi = auth.useAuthApi();
+  const { user } = authApi.useCurrentUser();
+  const logout = authApi.useLogout();
   const [showAddFeed, setShowAddFeed] = useState(false);
   const [showAddFolder, setShowAddFolder] = useState(false);
   const {
@@ -32,6 +37,29 @@ export default function Menu({
 
   return (
     <div className="flex flex-col h-full p-2">
+      {/* Mobile-only nav links — combined menu replaces the main nav bar dropdown */}
+      <div className="lg:hidden border-b border-base-300 mb-2 pb-1 flex flex-wrap gap-0.5">
+        <Link href="/" className="btn btn-ghost btn-xs">
+          Home
+        </Link>
+        {user?.is_admin && (
+          <Link href="/admin" className="btn btn-ghost btn-xs">
+            Admin
+          </Link>
+        )}
+        <Link href="/account" className="btn btn-ghost btn-xs">
+          Account
+        </Link>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs"
+          onClick={() => logout.mutateAsync()}
+          disabled={logout.isPending}
+        >
+          {logout.isPending ? "Signing out..." : "Sign out"}
+        </button>
+      </div>
+
       <div className="flex items-center justify-between px-2 py-3">
         <span className="font-bold text-sm uppercase tracking-wide opacity-60">
           Feeds
