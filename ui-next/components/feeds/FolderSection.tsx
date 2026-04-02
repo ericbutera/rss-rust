@@ -49,7 +49,9 @@ export default function FolderSection({
       <div
         ref={setDropRef}
         className={`relative flex w-full items-center gap-2 px-2 py-1 pr-10 rounded-btn cursor-pointer transition-colors ${isSelected ? "active" : ""} ${isOver ? "bg-primary/20 ring-1 ring-primary" : ""}`}
-        onClick={() => onSelectFolder(isSelected ? null : folder)}
+        onClick={() => {
+          if (!isSelected) onSelectFolder(folder);
+        }}
       >
         <button
           className="shrink-0 opacity-50 hover:opacity-100 p-0.5"

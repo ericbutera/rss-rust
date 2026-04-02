@@ -62,7 +62,9 @@ export default function FeedListItem({
     <li ref={setNodeRef} style={style} className="w-full">
       <div
         className={`group relative flex w-full items-center gap-2 px-2 py-1 pr-10 rounded-btn cursor-grab active:cursor-grabbing touch-none ${isNested ? "pl-7" : ""} ${isDragging ? "opacity-40" : ""} ${isSelected ? "active" : ""}`}
-        onClick={() => onSelectFeed(isSelected ? null : feed)}
+        onClick={() => {
+          if (!isSelected) onSelectFeed(feed);
+        }}
         {...attributes}
         {...listeners}
       >
