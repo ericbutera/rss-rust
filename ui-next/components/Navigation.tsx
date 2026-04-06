@@ -1,5 +1,6 @@
 "use client";
 
+import { useScrollDirection } from "@/lib/useScrollDirection";
 import { auth } from "@ericbutera/kaleido";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,9 +14,16 @@ export default function Navigation() {
   const { user, isLoading } = authApi.useCurrentUser();
   const logout = authApi.useLogout();
   const mobileLeading = useContext(MobileLeadingContext);
+  const scrollDirection = useScrollDirection();
 
   return (
-    <div className="navbar bg-base-100 shadow-sm">
+    <div
+      className={`navbar bg-base-100 shadow-sm fixed top-0 inset-x-0 z-50 lg:static lg:z-auto transition-transform duration-300 ${
+        scrollDirection === "down"
+          ? "-translate-y-full lg:translate-y-0"
+          : "translate-y-0"
+      }`}
+    >
       <div className="navbar-start">
         {mobileLeading ? (
           <div className="lg:hidden">{mobileLeading}</div>
