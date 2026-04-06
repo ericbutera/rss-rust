@@ -36,6 +36,8 @@ pub struct FolderResponse {
     /// Total unread article count across all feeds in this folder
     pub unread_count: u64,
     pub view_mode: String,
+    /// Whether to show only unread articles by default
+    pub only_unread: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -53,6 +55,8 @@ pub struct RenameFolderRequest {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateFolderViewRequest {
     pub view_mode: String,
+    /// Whether to show only unread articles by default. Omit to leave unchanged.
+    pub only_unread: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -90,6 +94,7 @@ pub async fn list_folders(
             // Unread counts are computed client-side instead of here.
             unread_count: 0,
             view_mode: f.view_mode,
+            only_unread: f.only_unread,
             created_at: f.created_at,
             updated_at: f.updated_at,
         })
@@ -128,6 +133,7 @@ pub async fn create_folder(
             sort_order: folder.sort_order,
             unread_count: 0,
             view_mode: folder.view_mode,
+            only_unread: folder.only_unread,
             created_at: folder.created_at,
             updated_at: folder.updated_at,
         }),
@@ -206,6 +212,7 @@ pub async fn rename_folder(
         sort_order: folder.sort_order,
         unread_count: 0,
         view_mode: folder.view_mode,
+        only_unread: folder.only_unread,
         created_at: folder.created_at,
         updated_at: folder.updated_at,
     }))
@@ -248,12 +255,22 @@ pub async fn update_folder_view(
         .await?
         .ok_or_else(|| AppError::not_found("Folder not found"))?;
 
+    // Optionally persist the only_unread preference in the same request
+    let folder = if let Some(only_unread) = payload.only_unread {
+        feed_folders::Model::set_only_unread(db, id, user_id, only_unread)
+            .await?
+            .ok_or_else(|| AppError::not_found("Folder not found"))?
+    } else {
+        folder
+    };
+
     Ok(Json(FolderResponse {
         id: folder.id,
         name: folder.name,
         sort_order: folder.sort_order,
         unread_count: 0,
         view_mode: folder.view_mode,
+        only_unread: folder.only_unread,
         created_at: folder.created_at,
         updated_at: folder.updated_at,
     }))
@@ -304,6 +321,8 @@ pub struct ListFolderArticlesParams {
     pub pagination: PaginationParams,
     #[serde(default)]
     pub only_saved: bool,
+    /// Override the persisted only_unread preference. Absent = use value from feed_folders.
+    pub only_unread: Option<bool>,
 }
 
 /// List articles across all feeds in a folder
@@ -361,8 +380,11 @@ pub async fn list_folder_articles(
 
     let mapped = paginated.map(|a| {
         let (read_at, saved_at) = state_map.get(&a.id).copied().unwrap_or((None, None));
-        ArticleResponse::from_model(a, read_at, saved_at)
+        ArticleResponse::from_model_list(a, read_at, saved_at)
     });
+
+    // Determine effective only_unread: use query param if provided, else use folder's persisted value
+    let effective_only_unread = params.only_unread.unwrap_or(folder_ctx.folder.only_unread);
 
     if params.only_saved {
         let saved: Vec<ArticleResponse> = mapped
@@ -372,6 +394,16 @@ pub async fn list_folder_articles(
             .collect();
         Ok(Json(PaginatedResponse {
             data: saved,
+            metadata: mapped.metadata,
+        }))
+    } else if effective_only_unread {
+        let unread: Vec<ArticleResponse> = mapped
+            .data
+            .into_iter()
+            .filter(|a| a.read_at.is_none())
+            .collect();
+        Ok(Json(PaginatedResponse {
+            data: unread,
             metadata: mapped.metadata,
         }))
     } else {

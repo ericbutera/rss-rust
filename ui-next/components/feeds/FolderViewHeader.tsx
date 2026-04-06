@@ -12,6 +12,8 @@ interface FolderViewHeaderProps {
   onMarkAllRead: () => void;
   onlySaved?: boolean;
   onToggleSaved?: () => void;
+  onlyUnread?: boolean;
+  onToggleUnread?: () => void;
   viewMode?: string;
   onViewModeChange?: (mode: string) => void;
   density?: Density;
@@ -25,6 +27,8 @@ export default function FolderViewHeader({
   onMarkAllRead,
   onlySaved,
   onToggleSaved,
+  onlyUnread,
+  onToggleUnread,
   viewMode = "list",
   onViewModeChange,
   density = "default",
@@ -50,6 +54,14 @@ export default function FolderViewHeader({
         <FolderHeaderSavedToggle
           onlySaved={onlySaved}
           onToggleSaved={onToggleSaved}
+        />
+
+        <FolderHeaderSavedToggle
+          onlySaved={onlyUnread}
+          onToggleSaved={onToggleUnread}
+          icon="unread"
+          activeLabel="Show all articles"
+          inactiveLabel="Show unread only"
         />
 
         {/* Mark all read */}

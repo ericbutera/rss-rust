@@ -38,6 +38,7 @@ pub(crate) struct ArticleData {
     pub(crate) description: Option<String>,
     pub(crate) image_url: Option<String>,
     pub(crate) content: Option<String>,
+    pub(crate) author: Option<String>,
     pub(crate) guid: Option<String>,
     /// Raw (unsanitized) description HTML, kept only to support content-image extraction.
     pub(crate) raw_description: Option<String>,
@@ -110,6 +111,7 @@ pub(crate) fn entry_to_article_data(entry: Entry) -> Option<ArticleData> {
 
     let image_url: Option<String> = extract_media_image(&entry);
     let title = entry.title.map(|t| t.content);
+    let author = entry.authors.into_iter().find_map(|p| Some(p.name));
 
     let raw_summary = entry
         .summary
@@ -126,6 +128,7 @@ pub(crate) fn entry_to_article_data(entry: Entry) -> Option<ArticleData> {
         description,
         image_url,
         content,
+        author,
         guid,
         raw_description: raw_summary,
     })
@@ -283,6 +286,7 @@ impl FeedFetchService {
             image_url,
             None, // preview not computed for RSS entries
             data.content,
+            data.author,
             data.guid,
         )
         .await?;

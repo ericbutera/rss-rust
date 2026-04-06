@@ -14,6 +14,8 @@ mod m20260320_000000_add_view_mode_to_user_feeds;
 mod m20260320_100000_create_feed_folders;
 mod m20260320_200000_add_folder_id_to_user_feeds;
 mod m20260321_000000_add_view_mode_to_feed_folders;
+mod m20260406_000000_add_only_unread;
+mod m20260406_100000_add_author_to_articles;
 
 pub struct Migrator;
 
@@ -59,6 +61,8 @@ impl MigratorTrait for Migrator {
         locals.push(Box::new(
             m20260321_000000_add_view_mode_to_feed_folders::Migration,
         ));
+        locals.push(Box::new(m20260406_000000_add_only_unread::Migration));
+        locals.push(Box::new(m20260406_100000_add_author_to_articles::Migration));
 
         locals.sort_by_key(|m| m.name().to_string());
 

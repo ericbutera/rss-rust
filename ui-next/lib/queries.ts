@@ -36,14 +36,23 @@ export function useFeeds() {
   return { ...resp, data: (resp.data ?? []) as FeedResponse[] };
 }
 
-export function useFeedArticles(feedId: number | null, onlySaved = false) {
+export function useFeedArticles(
+  feedId: number | null,
+  onlySaved = false,
+  onlyUnread = false,
+) {
   return useInfiniteQuery<ArticlesPage, Error>({
-    queryKey: ["feeds", feedId, "articles", { onlySaved }],
+    queryKey: ["feeds", feedId, "articles", { onlySaved, onlyUnread }],
     enabled: feedId !== null,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
-      const savedParam = onlySaved ? "&only_saved=true" : "";
-      const url = `${API_URL}/feeds/${feedId}/articles?page=${pageParam}&per_page=20${savedParam}`;
+      const params = new URLSearchParams({
+        page: String(pageParam),
+        per_page: "20",
+      });
+      if (onlySaved) params.set("only_saved", "true");
+      if (onlyUnread) params.set("only_unread", "true");
+      const url = `${API_URL}/feeds/${feedId}/articles?${params}`;
       const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return resp.json() as Promise<ArticlesPage>;
@@ -280,10 +289,14 @@ export function useUpdateFeedView() {
   const mutation = $api.useMutation("put", "/feeds/{id}/view");
   return {
     ...mutation,
-    mutateAsync: async (feedId: number, viewMode: string): Promise<void> => {
+    mutateAsync: async (
+      feedId: number,
+      viewMode: string,
+      onlyUnread?: boolean | null,
+    ): Promise<void> => {
       await mutation.mutateAsync({
         params: { path: { id: feedId } },
-        body: { view_mode: viewMode },
+        body: { view_mode: viewMode, only_unread: onlyUnread ?? null },
       });
       await queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
     },
@@ -295,10 +308,14 @@ export function useUpdateFolderView() {
   const mutation = $api.useMutation("put", "/folders/{id}/view");
   return {
     ...mutation,
-    mutateAsync: async (folderId: number, viewMode: string): Promise<void> => {
+    mutateAsync: async (
+      folderId: number,
+      viewMode: string,
+      onlyUnread?: boolean | null,
+    ): Promise<void> => {
       await mutation.mutateAsync({
         params: { path: { id: folderId } },
-        body: { view_mode: viewMode },
+        body: { view_mode: viewMode, only_unread: onlyUnread ?? null },
       });
       await queryClient.invalidateQueries({ queryKey: ["get", "/folders"] });
     },
@@ -396,17 +413,26 @@ export function useMarkFolderRead() {
   };
 }
 
-export function useFolderArticles(folderId: number | null, onlySaved = false) {
+export function useFolderArticles(
+  folderId: number | null,
+  onlySaved = false,
+  onlyUnread = false,
+) {
   return useInfiniteQuery<
     components["schemas"]["PaginatedResponse_ArticleResponse"],
     Error
   >({
-    queryKey: ["folders", folderId, "articles", { onlySaved }],
+    queryKey: ["folders", folderId, "articles", { onlySaved, onlyUnread }],
     enabled: folderId !== null,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
-      const savedParam = onlySaved ? "&only_saved=true" : "";
-      const url = `${API_URL}/folders/${folderId}/articles?page=${pageParam}&per_page=20${savedParam}`;
+      const params = new URLSearchParams({
+        page: String(pageParam),
+        per_page: "20",
+      });
+      if (onlySaved) params.set("only_saved", "true");
+      if (onlyUnread) params.set("only_unread", "true");
+      const url = `${API_URL}/folders/${folderId}/articles?${params}`;
       const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return resp.json() as Promise<

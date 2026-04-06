@@ -17,6 +17,7 @@ pub struct Model {
     pub image_url: Option<String>,
     pub preview: Option<String>,
     pub content: Option<String>,
+    pub author: Option<String>,
     pub guid: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -128,6 +129,7 @@ impl Model {
         image_url: Option<String>,
         preview: Option<String>,
         content: Option<String>,
+        author: Option<String>,
         guid: Option<String>,
     ) -> Result<Self, DbErr> {
         ActiveModel {
@@ -138,6 +140,7 @@ impl Model {
             image_url: Set(image_url),
             preview: Set(preview),
             content: Set(content),
+            author: Set(author),
             guid: Set(guid),
             ..Default::default()
         }

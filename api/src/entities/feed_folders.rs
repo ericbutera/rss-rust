@@ -14,6 +14,7 @@ pub struct Model {
     pub name: String,
     pub sort_order: i32,
     pub view_mode: String,
+    pub only_unread: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -72,6 +73,7 @@ impl Model {
             user_id: Set(user_id),
             name: Set(name),
             sort_order: Set(sort_order),
+            only_unread: Set(false),
             ..Default::default()
         }
         .insert(db)
@@ -103,6 +105,23 @@ impl Model {
             .exec(db)
             .await?;
         Ok(result.rows_affected > 0)
+    }
+
+    pub async fn set_only_unread(
+        db: &impl ConnectionTrait,
+        id: i32,
+        user_id: i32,
+        only_unread: bool,
+    ) -> Result<Option<Self>, DbErr> {
+        let model = Self::find_by_id_and_user(db, id, user_id).await?;
+        match model {
+            None => Ok(None),
+            Some(m) => {
+                let mut active: ActiveModel = m.into();
+                active.only_unread = Set(only_unread);
+                Ok(Some(active.update(db).await?))
+            }
+        }
     }
 
     pub async fn set_view_mode(

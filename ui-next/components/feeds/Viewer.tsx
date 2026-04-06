@@ -42,6 +42,7 @@ export default function Viewer({
   onUnsubscribed,
 }: ViewerProps) {
   const [onlySaved, setOnlySaved] = useState(false);
+  const [onlyUnread, setOnlyUnread] = useState(feed.only_unread ?? false);
   const { prefs, setDensity, setTextSize } = useViewPreferences();
   const { mutateAsync: updateFeedView } = useUpdateFeedView();
 
@@ -52,7 +53,7 @@ export default function Viewer({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useFeedArticles(feed.id, onlySaved);
+  } = useFeedArticles(feed.id, onlySaved, onlyUnread);
 
   const { mutate: markArticleRead } = useMarkArticleRead();
   const { mutate: markFeedRead } = useMarkFeedRead();
@@ -99,26 +100,27 @@ export default function Viewer({
     onUnsubscribed();
   }
 
+  async function handleToggleUnread() {
+    const next = !onlyUnread;
+    setOnlyUnread(next);
+    await updateFeedView(feed.id, feed.view_mode, next);
+  }
+
   const { mutate: toggleSave } = useToggleSaveArticle();
-
   const pagedArticles = data?.pages.flatMap((p) => p.data) ?? [];
+  const { data: fullOpenArticle } = useArticle(openArticleId);
 
-  // Deep-link: if the article isn't in the paged list, fetch it directly.
+  // Deep-link: if the article isn't in the paged list, prepend it
   const articleInList =
     openArticleId !== null && pagedArticles.some((a) => a.id === openArticleId);
 
-  const { data: deepLinkedArticle } = useArticle(
-    openArticleId !== null && !articleInList && !isLoading
-      ? openArticleId
-      : null,
-  );
-
-  const articles = deepLinkedArticle
-    ? [
-        deepLinkedArticle as ArticleResponse,
-        ...pagedArticles.filter((a) => a.id !== openArticleId),
-      ]
-    : pagedArticles;
+  const articles =
+    fullOpenArticle && !articleInList
+      ? [
+          fullOpenArticle as ArticleResponse,
+          ...pagedArticles.filter((a) => a.id !== openArticleId),
+        ]
+      : pagedArticles;
 
   useArticleKeyboardNav({
     articles,
@@ -127,6 +129,12 @@ export default function Viewer({
     onToggleSave: toggleSave,
     feedId: feed.id,
   });
+
+  const emptyMessage = onlySaved
+    ? "No saved articles in this feed."
+    : onlyUnread
+      ? "No unread articles in this feed."
+      : "No articles yet.";
 
   return (
     <div className="flex flex-col min-h-full">
@@ -137,6 +145,8 @@ export default function Viewer({
         onUnsubscribe={handleUnsubscribe}
         onlySaved={onlySaved}
         onToggleSaved={() => setOnlySaved((v) => !v)}
+        onlyUnread={onlyUnread}
+        onToggleUnread={handleToggleUnread}
         viewMode={feed.view_mode}
         onViewModeChange={(mode) => updateFeedView(feed.id, mode)}
         density={prefs.density}
@@ -153,9 +163,7 @@ export default function Viewer({
           </div>
         )}
         {!isLoading && !isError && articles.length === 0 && (
-          <div className="text-center opacity-50 py-16">
-            {onlySaved ? "No saved articles in this feed." : "No articles yet."}
-          </div>
+          <div className="text-center opacity-50 py-16">{emptyMessage}</div>
         )}
 
         <ArticleList
@@ -167,6 +175,7 @@ export default function Viewer({
           viewMode={feed.view_mode}
           density={prefs.density}
           textSize={prefs.textSize}
+          fullOpenArticle={fullOpenArticle as ArticleResponse | undefined}
         />
 
         {/* Infinite scroll sentinel */}

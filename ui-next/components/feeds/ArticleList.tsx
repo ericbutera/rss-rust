@@ -146,7 +146,7 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
   );
 }
 
-/** Small feed source label — shown in folder views where articles come from multiple feeds. */
+/** Shows feed source label in folder views where articles come from multiple feeds. */
 function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
   const [imgError, setImgError] = useState(false);
   if (!feed) return null;
@@ -179,6 +179,16 @@ function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
   );
 }
 
+/** In single-feed view: shows the article author if available. */
+function ArticleAuthor({ author }: { author?: string | null }) {
+  if (!author) return null;
+  return (
+    <span className="text-xs opacity-40 shrink-0 truncate max-w-[120px]">
+      {author}
+    </span>
+  );
+}
+
 interface ArticleListProps {
   articles: ArticleResponse[];
   feedId?: number;
@@ -190,6 +200,8 @@ interface ArticleListProps {
   viewMode?: string;
   density?: Density;
   textSize?: TextSize;
+  /** Full article data for the open article — fetched separately for body content. */
+  fullOpenArticle?: ArticleResponse;
 }
 
 export default function ArticleList({
@@ -202,6 +214,7 @@ export default function ArticleList({
   viewMode = "list",
   density = "default",
   textSize = "base",
+  fullOpenArticle,
 }: ArticleListProps) {
   const { mutate: toggleSave } = useToggleSaveArticle();
   const feedMap = feeds
@@ -233,11 +246,15 @@ export default function ArticleList({
                 className="rounded-t-box w-full h-36 object-cover"
               />
               <div className="card-body article-card-inner p-3 gap-1">
-                <p className="article-card-title font-semibold text-sm leading-snug line-clamp-2">
+                <p
+                  className={`article-card-title font-semibold text-sm leading-snug ${isOpen ? "" : "line-clamp-2"}`}
+                >
                   {article.title ?? article.url}
                 </p>
                 {article.preview && (
-                  <p className="text-xs opacity-60 line-clamp-3">
+                  <p
+                    className={`text-xs text-base-content/60 ${isOpen ? "" : "line-clamp-2"}`}
+                  >
                     {article.preview}
                   </p>
                 )}
@@ -246,7 +263,11 @@ export default function ArticleList({
                     <span className="text-xs opacity-40">
                       {relativeTime(article.created_at)}
                     </span>
-                    <FeedLabel feed={articleFeed} />
+                    {feedMap ? (
+                      <FeedLabel feed={articleFeed} />
+                    ) : (
+                      <ArticleAuthor author={article.author} />
+                    )}
                   </span>
                   <button
                     className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
@@ -263,7 +284,7 @@ export default function ArticleList({
                 </div>
                 {isOpen && (
                   <div className="mt-2 border-t border-base-300 pt-2">
-                    <ArticleBody article={article} />
+                    <ArticleBody article={fullOpenArticle ?? article} />
                   </div>
                 )}
               </div>
@@ -297,7 +318,7 @@ export default function ArticleList({
                 />
                 <div className="flex-1 min-w-0 flex flex-col gap-1">
                   <p
-                    className={`article-magazine-title font-semibold text-sm leading-snug line-clamp-2 ${isOpen ? "text-primary" : ""}`}
+                    className={`article-magazine-title font-semibold text-sm leading-snug ${isOpen ? "text-primary" : "line-clamp-2"}`}
                   >
                     {article.title ?? article.url}
                   </p>
@@ -311,7 +332,11 @@ export default function ArticleList({
                       {relativeTime(article.created_at)}
                     </span>
                     <span className="ml-auto">
-                      <FeedLabel feed={articleFeed} />
+                      {feedMap ? (
+                        <FeedLabel feed={articleFeed} />
+                      ) : (
+                        <ArticleAuthor author={article.author} />
+                      )}
                     </span>
                     <button
                       className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
@@ -330,7 +355,7 @@ export default function ArticleList({
               </div>
               {isOpen && (
                 <div className="px-3 pb-4 bg-base-100 text-sm">
-                  <ArticleBody article={article} />
+                  <ArticleBody article={fullOpenArticle ?? article} />
                 </div>
               )}
             </div>
@@ -373,10 +398,14 @@ export default function ArticleList({
               }`}
             >
               <span className="flex items-center gap-2">
-                <span className="truncate flex-1">
+                <span className={isOpen ? "flex-1" : "truncate flex-1"}>
                   {article.title ?? article.url}
                 </span>
-                <FeedLabel feed={articleFeed} />
+                {feedMap ? (
+                  <FeedLabel feed={articleFeed} />
+                ) : (
+                  <ArticleAuthor author={article.author} />
+                )}
                 <div
                   className="tooltip tooltip-left relative z-[2]"
                   data-tip={
@@ -399,9 +428,14 @@ export default function ArticleList({
                   {relativeTime(article.created_at)}
                 </span>
               </span>
+              {article.preview && (
+                <p className="text-xs text-base-content/60 mt-0.5 line-clamp-1">
+                  {article.preview}
+                </p>
+              )}
             </div>
             <div className="collapse-content text-sm bg-base-100 text-base-content">
-              <ArticleBody article={article} />
+              <ArticleBody article={fullOpenArticle ?? article} />
             </div>
           </div>
         );

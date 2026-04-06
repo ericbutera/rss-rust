@@ -17,6 +17,8 @@ interface NavProps {
   onUnsubscribe: () => void;
   onlySaved?: boolean;
   onToggleSaved?: () => void;
+  onlyUnread?: boolean;
+  onToggleUnread?: () => void;
   viewMode?: string;
   onViewModeChange?: (mode: string) => void;
   density?: Density;
@@ -32,6 +34,8 @@ export default function ViewHeader({
   onUnsubscribe,
   onlySaved,
   onToggleSaved,
+  onlyUnread,
+  onToggleUnread,
   viewMode = "list",
   onViewModeChange,
   density = "default",
@@ -62,6 +66,14 @@ export default function ViewHeader({
         <FolderHeaderSavedToggle
           onlySaved={onlySaved}
           onToggleSaved={onToggleSaved}
+        />
+
+        <FolderHeaderSavedToggle
+          onlySaved={onlyUnread}
+          onToggleSaved={onToggleUnread}
+          icon="unread"
+          activeLabel="Show all articles"
+          inactiveLabel="Show unread only"
         />
 
         <div className="tooltip tooltip-bottom" data-tip="Mark all read">

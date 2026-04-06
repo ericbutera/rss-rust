@@ -109,6 +109,7 @@ impl PageExtractor {
             extracted.image_url,
             extracted.preview,
             extracted.content,
+            None, // author not available from page extraction
             guid,
         )
         .await?;

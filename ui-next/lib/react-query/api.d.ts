@@ -730,6 +730,7 @@ export interface components {
       id: number;
       image_url?: string | null;
       preview?: string | null;
+      author?: string | null;
       /** Format: date-time */
       read_at?: string | null;
       /** Format: date-time */
@@ -818,6 +819,8 @@ export interface components {
       verified_at?: string | null;
       /** @description Article layout mode: list | cards | magazine */
       view_mode: string;
+      /** @description Whether to show only unread articles by default */
+      only_unread: boolean;
     };
     FetchHistoryResponse: {
       /** Format: int32 */
@@ -860,6 +863,8 @@ export interface components {
        */
       unread_count: number;
       view_mode: string;
+      /** @description Whether to show only unread articles by default */
+      only_unread: boolean;
       /** Format: date-time */
       updated_at: string;
     };
@@ -1010,6 +1015,8 @@ export interface components {
     };
     UpdateFolderViewRequest: {
       view_mode: string;
+      /** @description Whether to show only unread articles by default. Omit to leave unchanged. */
+      only_unread?: boolean | null;
     };
     ReorderFeedItem: {
       /** Format: int32 */
@@ -1054,6 +1061,8 @@ export interface components {
     UpdateFeedViewRequest: {
       /** @description Layout mode for this feed's articles. One of: list, cards, magazine. */
       view_mode: string;
+      /** @description Whether to show only unread articles by default. Omit to leave unchanged. */
+      only_unread?: boolean | null;
     };
     UpdateFlagRequest: {
       enabled: boolean;

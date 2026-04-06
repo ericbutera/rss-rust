@@ -2,6 +2,7 @@
 
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
+  useArticle,
   useFeeds,
   useFolderArticles,
   useMarkArticleRead,
@@ -29,6 +30,7 @@ export default function FolderViewer({
   onToggleArticle,
 }: FolderViewerProps) {
   const [onlySaved, setOnlySaved] = useState(false);
+  const [onlyUnread, setOnlyUnread] = useState(folder.only_unread ?? false);
   const { prefs, setDensity, setTextSize } = useViewPreferences();
   const { mutateAsync: updateFolderView } = useUpdateFolderView();
   const { data: feeds } = useFeeds();
@@ -40,7 +42,7 @@ export default function FolderViewer({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useFolderArticles(folder.id, onlySaved);
+  } = useFolderArticles(folder.id, onlySaved, onlyUnread);
 
   const { mutate: markArticleRead } = useMarkArticleRead();
   const { mutate: markFolderRead } = useMarkFolderRead();
@@ -83,8 +85,17 @@ export default function FolderViewer({
     markFolderRead(folderFeedIds);
   }
 
+  async function handleToggleUnread() {
+    const next = !onlyUnread;
+    setOnlyUnread(next);
+    await updateFolderView(folder.id, folder.view_mode, next);
+  }
+
   const articles = data?.pages.flatMap((p) => p.data) ?? [];
   const { mutate: toggleSave } = useToggleSaveArticle();
+
+  // Fetch full article for body rendering (list items are partial)
+  const { data: fullOpenArticle } = useArticle(openArticleId);
 
   useArticleKeyboardNav({
     articles,
@@ -93,6 +104,12 @@ export default function FolderViewer({
     onToggleSave: toggleSave,
   });
 
+  const emptyMessage = onlySaved
+    ? "No saved articles in this folder."
+    : onlyUnread
+      ? "No unread articles in this folder."
+      : "No articles in this folder yet.";
+
   return (
     <div className="flex flex-col min-h-full">
       <FolderViewHeader
@@ -100,6 +117,8 @@ export default function FolderViewer({
         onMarkAllRead={handleMarkAllRead}
         onlySaved={onlySaved}
         onToggleSaved={() => setOnlySaved((v) => !v)}
+        onlyUnread={onlyUnread}
+        onToggleUnread={handleToggleUnread}
         viewMode={folder.view_mode}
         onViewModeChange={(mode) => updateFolderView(folder.id, mode)}
         density={prefs.density}
@@ -116,11 +135,7 @@ export default function FolderViewer({
           </div>
         )}
         {!isLoading && !isError && articles.length === 0 && (
-          <div className="text-center opacity-50 py-16">
-            {onlySaved
-              ? "No saved articles in this folder."
-              : "No articles in this folder yet."}
-          </div>
+          <div className="text-center opacity-50 py-16">{emptyMessage}</div>
         )}
 
         {!isLoading && !isError && articles.length > 0 && (
@@ -132,6 +147,7 @@ export default function FolderViewer({
             viewMode={folder.view_mode}
             density={prefs.density}
             textSize={prefs.textSize}
+            fullOpenArticle={fullOpenArticle as ArticleResponse | undefined}
           />
         )}
 

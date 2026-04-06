@@ -104,12 +104,16 @@ pub struct FeedResponse {
     pub view_mode: String,
     /// Folder this feed belongs to, or null
     pub folder_id: Option<i32>,
+    /// Whether to show only unread articles by default
+    pub only_unread: bool,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateFeedViewRequest {
     /// Layout mode for this feed's articles. One of: list, cards, magazine.
     pub view_mode: String,
+    /// Whether to show only unread articles by default. Omit to leave unchanged.
+    pub only_unread: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -135,6 +139,7 @@ impl FeedResponse {
         name_override: Option<String>,
         view_mode: String,
         folder_id: Option<i32>,
+        only_unread: bool,
     ) -> Self {
         FeedResponse {
             id: m.id,
@@ -151,6 +156,7 @@ impl FeedResponse {
             favicon_url: m.favicon_url,
             view_mode,
             folder_id,
+            only_unread,
         }
     }
 }
@@ -190,6 +196,7 @@ pub struct ArticleResponse {
     pub image_url: Option<String>,
     pub preview: Option<String>,
     pub content: Option<String>,
+    pub author: Option<String>,
     pub guid: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -212,11 +219,26 @@ impl ArticleResponse {
             image_url: m.image_url,
             preview: m.preview,
             content: m.content,
+            author: m.author,
             guid: m.guid,
             created_at: m.created_at,
             updated_at: m.updated_at,
             read_at,
             saved_at,
+        }
+    }
+
+    /// Partial constructor for list endpoints — omits `content` and `description`
+    /// to reduce response payload size.
+    pub fn from_model_list(
+        m: articles::Model,
+        read_at: Option<chrono::DateTime<chrono::Utc>>,
+        saved_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Self {
+        ArticleResponse {
+            description: None,
+            content: None,
+            ..Self::from_model(m, read_at, saved_at)
         }
     }
 }
@@ -295,6 +317,10 @@ pub async fn list_feeds(
         .iter()
         .map(|uf| (uf.feed_id, uf.folder_id))
         .collect();
+    let only_unread_map: HashMap<i32, bool> = user_feed_rows
+        .iter()
+        .map(|uf| (uf.feed_id, uf.only_unread))
+        .collect();
     let feed_ids: Vec<i32> = user_feed_rows.into_iter().map(|uf| uf.feed_id).collect();
 
     let last_fetch_map = fetch_history::Model::last_fetch_times(db, &feed_ids)
@@ -320,6 +346,7 @@ pub async fn list_feeds(
                 .cloned()
                 .unwrap_or_else(|| "list".to_string());
             let folder_id = folder_id_map.get(&f.id).copied().flatten();
+            let only_unread = only_unread_map.get(&f.id).copied().unwrap_or(false);
             FeedResponse::from_model(
                 f,
                 last_read_at,
@@ -330,6 +357,7 @@ pub async fn list_feeds(
                 name_override,
                 view_mode,
                 folder_id,
+                only_unread,
             )
         })
         .collect();
@@ -424,6 +452,7 @@ pub async fn create_feed(
                 None,
                 "list".to_string(),
                 None,
+                false,
             ),
             task_id,
         }),
@@ -496,8 +525,9 @@ pub async fn rename_feed(
         uf.unread_count.max(0) as u64,
         uf.sort_order,
         uf.name_override,
-        uf.view_mode,
+        uf.view_mode.clone(),
         uf.folder_id,
+        uf.only_unread,
     )))
 }
 
@@ -538,6 +568,15 @@ pub async fn update_feed_view(
         .await?
         .ok_or_else(|| AppError::not_found("Feed subscription not found"))?;
 
+    // Optionally persist the only_unread preference in the same request
+    let uf = if let Some(only_unread) = payload.only_unread {
+        user_feeds::Model::set_only_unread(db, user_id, id, only_unread)
+            .await?
+            .ok_or_else(|| AppError::not_found("Feed subscription not found"))?
+    } else {
+        uf
+    };
+
     let feed = feeds::Model::find_by_id(db, id)
         .await?
         .ok_or_else(|| AppError::not_found("Feed not found"))?;
@@ -550,8 +589,9 @@ pub async fn update_feed_view(
         uf.unread_count.max(0) as u64,
         uf.sort_order,
         uf.name_override,
-        uf.view_mode,
+        uf.view_mode.clone(),
         uf.folder_id,
+        uf.only_unread,
     )))
 }
 
@@ -598,6 +638,8 @@ pub struct ListArticlesParams {
     pub pagination: PaginationParams,
     #[serde(default)]
     pub only_saved: bool,
+    /// Override the persisted only_unread preference. Absent = use value from user_feeds.
+    pub only_unread: Option<bool>,
 }
 
 /// List articles for a feed
@@ -645,8 +687,16 @@ pub async fn list_articles(
 
     let mapped = paginated.map(|a| {
         let (read_at, saved_at) = state_map.get(&a.id).copied().unwrap_or((None, None));
-        ArticleResponse::from_model(a, read_at, saved_at)
+        ArticleResponse::from_model_list(a, read_at, saved_at)
     });
+
+    // Fetch the user subscription to get the persisted only_unread preference
+    // and the bulk-read threshold (all_articles_read_at).
+    let subscription = user_feeds::Model::find_subscription(db, user_id, id).await?;
+    let effective_only_unread = params
+        .only_unread
+        .unwrap_or_else(|| subscription.as_ref().map_or(false, |s| s.only_unread));
+    let all_read_at = subscription.and_then(|s| s.all_articles_read_at);
 
     if params.only_saved {
         let saved: Vec<ArticleResponse> = mapped
@@ -656,6 +706,18 @@ pub async fn list_articles(
             .collect();
         Ok(Json(PaginatedResponse {
             data: saved,
+            metadata: mapped.metadata,
+        }))
+    } else if effective_only_unread {
+        let unread: Vec<ArticleResponse> = mapped
+            .data
+            .into_iter()
+            .filter(|a| {
+                a.read_at.is_none() && all_read_at.map_or(true, |bulk_ts| a.created_at > bulk_ts)
+            })
+            .collect();
+        Ok(Json(PaginatedResponse {
+            data: unread,
             metadata: mapped.metadata,
         }))
     } else {

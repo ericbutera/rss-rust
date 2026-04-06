@@ -17,6 +17,7 @@ pub struct Model {
     pub sort_order: i32,
     pub name_override: Option<String>,
     pub view_mode: String,
+    pub only_unread: bool,
     pub folder_id: Option<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -95,6 +96,7 @@ impl Model {
             all_articles_read_at: Set(None),
             unread_count: Set(existing_count),
             sort_order: Set(sort_order),
+            only_unread: Set(false),
             ..Default::default()
         }
         .insert(db)
@@ -201,6 +203,20 @@ impl Model {
             )
             .await?;
         Ok(result.rows_affected())
+    }
+
+    /// Set the only_unread filter for a feed subscription.
+    /// Returns `None` if the subscription doesn't exist.
+    pub async fn set_only_unread(
+        db: &impl ConnectionTrait,
+        user_id: i32,
+        feed_id: i32,
+        only_unread: bool,
+    ) -> Result<Option<Self>, DbErr> {
+        Self::modify_subscription(db, user_id, feed_id, |am| {
+            am.only_unread = Set(only_unread);
+        })
+        .await
     }
 
     /// Set the view mode for a feed subscription.
