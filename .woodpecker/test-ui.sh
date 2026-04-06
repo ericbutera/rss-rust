@@ -8,3 +8,4 @@ npm install -g pnpm
 cd ui-next
 pnpm install --frozen-lockfile
 pnpm run typecheck
+pnpm run test

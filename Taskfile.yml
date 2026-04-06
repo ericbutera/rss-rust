@@ -40,6 +40,19 @@ tasks:
     status:
       - test -f ui-next/package.json
 
+  ui-next:test:
+    dir: ui-next
+    deps: [ui-next:deps]
+    cmds:
+      - pnpm run typecheck
+      - pnpm run test
+
+  ui-next:test:watch:
+    dir: ui-next
+    deps: [ui-next:deps]
+    cmds:
+      - pnpm run test:watch
+
   api:dev:
     cmds:
       - cargo run --bin api
