@@ -8,13 +8,15 @@ import Link from "next/link";
 import { createContext, useContext, type ReactNode } from "react";
 
 export const MobileLeadingContext = createContext<ReactNode>(null);
+export const SidebarOpenContext = createContext(false);
 
 export default function Navigation() {
   const authApi = auth.useAuthApi();
   const { user, isLoading } = authApi.useCurrentUser();
   const logout = authApi.useLogout();
   const mobileLeading = useContext(MobileLeadingContext);
-  const scrollDirection = useScrollDirection();
+  const sidebarOpen = useContext(SidebarOpenContext);
+  const scrollDirection = useScrollDirection(8, sidebarOpen);
 
   return (
     <div

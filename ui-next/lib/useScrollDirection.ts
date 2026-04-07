@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
+import { useEventListener } from "usehooks-ts";
 
 type ScrollDirection = "up" | "down";
 
@@ -9,29 +10,27 @@ type ScrollDirection = "up" | "down";
  * Always returns "up" when near the top of the page so the navbar
  * is guaranteed to reappear before the page top is reached.
  */
-export function useScrollDirection(threshold = 8): ScrollDirection {
+export function useScrollDirection(
+  threshold = 8,
+  paused = false,
+): ScrollDirection {
   const [direction, setDirection] = useState<ScrollDirection>("up");
+  const lastY = useRef(typeof window !== "undefined" ? window.scrollY : 0);
 
-  useEffect(() => {
-    let lastY = window.scrollY;
-
-    function handleScroll() {
-      const y = window.scrollY;
-      // Always show when close to the top
-      if (y < 60) {
-        setDirection("up");
-        lastY = y;
-        return;
-      }
-      const delta = y - lastY;
-      if (Math.abs(delta) < threshold) return;
-      setDirection(delta > 0 ? "down" : "up");
-      lastY = y;
+  useEventListener("scroll", () => {
+    if (paused) return;
+    const y = window.scrollY;
+    // Always show when close to the top
+    if (y < 60) {
+      setDirection("up");
+      lastY.current = y;
+      return;
     }
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [threshold]);
+    const delta = y - lastY.current;
+    if (Math.abs(delta) < threshold) return;
+    setDirection(delta > 0 ? "down" : "up");
+    lastY.current = y;
+  });
 
   return direction;
 }
