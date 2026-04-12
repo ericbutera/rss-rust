@@ -13,7 +13,8 @@ import type { Verifications } from "@/lib/usePendingVerifications";
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   useDroppable,
   useSensor,
@@ -87,8 +88,12 @@ export default function FeedList({
   const [activeFeed, setActiveFeed] = useState<FeedResponse | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
+    useSensor(MouseSensor, {
+      activationConstraint: { delay: 150, tolerance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      // Long hold required on touch so normal scroll gestures pass through.
+      activationConstraint: { delay: 500, tolerance: 8 },
     }),
   );
 
