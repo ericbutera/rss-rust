@@ -98,70 +98,80 @@ describe("ArticleList", () => {
   });
 
   describe("feed view — no feeds prop (single-feed context)", () => {
-    it("shows article author in list view", () => {
+    it("shows article author in article body in list view", () => {
       render(
         <ArticleList
           {...baseProps}
           articles={[makeArticle({ author: "Jane Doe" })]}
         />,
       );
-      expect(screen.getByText("Jane Doe")).toBeInTheDocument();
+      // Author is now in ArticleBody inside collapse-content (always in DOM for list)
+      expect(screen.getByText("By Jane Doe")).toBeInTheDocument();
     });
 
-    it("shows article author in cards view", () => {
+    it("shows article author in article body when the article is open in cards view", () => {
+      const article = makeArticle({ id: 1, author: "Jane Doe" });
       render(
         <ArticleList
           {...baseProps}
-          articles={[makeArticle({ author: "Jane Doe" })]}
+          openArticleId={article.id}
+          articles={[article]}
           viewMode="cards"
         />,
       );
-      expect(screen.getByText("Jane Doe")).toBeInTheDocument();
+      expect(screen.getByText("By Jane Doe")).toBeInTheDocument();
     });
 
-    it("shows article author in magazine view", () => {
+    it("shows article author in article body when the article is open in magazine view", () => {
+      const article = makeArticle({ id: 1, author: "Jane Doe" });
       render(
         <ArticleList
           {...baseProps}
-          articles={[makeArticle({ author: "Jane Doe" })]}
+          openArticleId={article.id}
+          articles={[article]}
           viewMode="magazine"
         />,
       );
-      expect(screen.getByText("Jane Doe")).toBeInTheDocument();
+      expect(screen.getByText("By Jane Doe")).toBeInTheDocument();
     });
 
     it("does not show feed label when feeds prop is absent", () => {
       const article = makeArticle({ author: "Jane Doe" });
       render(<ArticleList {...baseProps} articles={[article]} />);
-      // Feed name should not appear anywhere
+      // Feed name should not appear as text or as a source icon
       expect(screen.queryByText("Example Feed")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("img", { name: "Example Feed" }),
+      ).not.toBeInTheDocument();
     });
 
-    it("renders nothing for author slot when author is null", () => {
-      const { container } = render(
+    it("renders no author text when author is null", () => {
+      render(
         <ArticleList
           {...baseProps}
           articles={[makeArticle({ author: null })]}
         />,
       );
-      // ArticleAuthor returns null when author is falsy — no text outside the title
-      expect(
-        container.querySelector(".text-xs.opacity-40.truncate"),
-      ).not.toBeInTheDocument();
+      // No "By ..." text should appear anywhere
+      expect(screen.queryByText(/^By\s/)).not.toBeInTheDocument();
     });
   });
 
   describe("folder view — feeds prop provided", () => {
-    it("shows feed name in list view", () => {
+    it("shows feed icon with tooltip in list view (no inline text)", () => {
       const feed = makeFeed({ id: 10, name: "My Tech Feed" });
       const article = makeArticle({ feed_id: 10 });
       render(
         <ArticleList {...baseProps} articles={[article]} feeds={[feed]} />,
       );
-      expect(screen.getByText("My Tech Feed")).toBeInTheDocument();
+      // Feed shown as icon-only with aria-label; no visible text
+      expect(
+        screen.getByRole("img", { name: "My Tech Feed" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("My Tech Feed")).not.toBeInTheDocument();
     });
 
-    it("shows feed name in cards view", () => {
+    it("shows feed icon with tooltip in cards view (no inline text)", () => {
       const feed = makeFeed({ id: 10, name: "My Tech Feed" });
       const article = makeArticle({ feed_id: 10 });
       render(
@@ -172,10 +182,13 @@ describe("ArticleList", () => {
           viewMode="cards"
         />,
       );
-      expect(screen.getByText("My Tech Feed")).toBeInTheDocument();
+      expect(
+        screen.getByRole("img", { name: "My Tech Feed" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("My Tech Feed")).not.toBeInTheDocument();
     });
 
-    it("shows feed name in magazine view", () => {
+    it("shows feed icon with tooltip in magazine view (no inline text)", () => {
       const feed = makeFeed({ id: 10, name: "My Tech Feed" });
       const article = makeArticle({ feed_id: 10 });
       render(
@@ -186,19 +199,23 @@ describe("ArticleList", () => {
           viewMode="magazine"
         />,
       );
-      expect(screen.getByText("My Tech Feed")).toBeInTheDocument();
+      expect(
+        screen.getByRole("img", { name: "My Tech Feed" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("My Tech Feed")).not.toBeInTheDocument();
     });
 
-    it("does not show article author in folder view", () => {
+    it("shows author in article body when article has an author", () => {
       const feed = makeFeed({ id: 10, name: "My Tech Feed" });
       const article = makeArticle({ feed_id: 10, author: "Jane Doe" });
       render(
         <ArticleList {...baseProps} articles={[article]} feeds={[feed]} />,
       );
-      expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument();
+      // Author is in ArticleBody (collapse-content always in DOM for list view)
+      expect(screen.getByText("By Jane Doe")).toBeInTheDocument();
     });
 
-    it("shows multiple feed names for articles from different feeds", () => {
+    it("shows icons for all sources when articles come from different feeds", () => {
       const feed1 = makeFeed({ id: 10, name: "Feed Alpha" });
       const feed2 = makeFeed({ id: 20, name: "Feed Beta" });
       const a1 = makeArticle({ id: 1, feed_id: 10 });
@@ -210,8 +227,15 @@ describe("ArticleList", () => {
           feeds={[feed1, feed2]}
         />,
       );
-      expect(screen.getByText("Feed Alpha")).toBeInTheDocument();
-      expect(screen.getByText("Feed Beta")).toBeInTheDocument();
+      expect(
+        screen.getByRole("img", { name: "Feed Alpha" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("img", { name: "Feed Beta" }),
+      ).toBeInTheDocument();
+      // Feed names are NOT shown as inline text
+      expect(screen.queryByText("Feed Alpha")).not.toBeInTheDocument();
+      expect(screen.queryByText("Feed Beta")).not.toBeInTheDocument();
     });
   });
 

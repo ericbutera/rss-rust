@@ -70,7 +70,9 @@ vi.mock("@/components/feeds/FetchHistoryModal", () => ({
 }));
 
 vi.mock("@/components/feeds/ArticleList", () => ({
-  default: () => <div data-testid="article-list" />,
+  default: ({ articles }: { articles: ArticleResponse[] }) => (
+    <div data-testid="article-list" data-count={articles.length} />
+  ),
 }));
 
 vi.mock("@/components/ui/LoadingSpinner", () => ({
@@ -281,6 +283,50 @@ describe("Viewer", () => {
       });
       render(<Viewer {...defaultProps} feed={makeFeed()} />);
       expect(screen.getByTestId("article-list")).toBeInTheDocument();
+    });
+
+    it("keeps opened article in list after onlyUnread refetch removes it", async () => {
+      // Initial state: one unread article in the list
+      const article = makeArticle({ id: 42, read_at: null });
+      mocks.feedArticles.mockReturnValue({
+        ...defaultFeedArticlesResult,
+        data: {
+          pages: [
+            { data: [article], meta: { total: 1, page: 1, per_page: 20 } },
+          ],
+        },
+      });
+      mocks.article.mockReturnValue({ data: article });
+
+      const { rerender } = render(
+        <Viewer
+          {...defaultProps}
+          openArticleId={42}
+          feed={makeFeed({ only_unread: true })}
+        />,
+      );
+
+      // After mark-read, feed articles refetch returns empty (article now read)
+      mocks.feedArticles.mockReturnValue({
+        ...defaultFeedArticlesResult,
+        data: {
+          pages: [{ data: [], meta: { total: 0, page: 1, per_page: 20 } }],
+        },
+      });
+
+      rerender(
+        <Viewer
+          {...defaultProps}
+          openArticleId={42}
+          feed={makeFeed({ only_unread: true })}
+        />,
+      );
+
+      // The pinned article should keep the list count at 1, not 0
+      expect(screen.getByTestId("article-list")).toHaveAttribute(
+        "data-count",
+        "1",
+      );
     });
   });
 });

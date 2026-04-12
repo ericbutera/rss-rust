@@ -342,5 +342,50 @@ describe("FolderViewer", () => {
       render(<FolderViewer {...defaultProps} folder={makeFolder()} />);
       expect(screen.getByTestId("article-list")).toBeInTheDocument();
     });
+
+    it("keeps opened article in list after onlyUnread refetch removes it", () => {
+      const article = makeArticle({ id: 99, read_at: null });
+
+      // Initial render: article is in the paged list and fullOpenArticle is available
+      mocks.folderArticles.mockReturnValue({
+        ...defaultFolderArticlesResult,
+        data: {
+          pages: [
+            { data: [article], meta: { total: 1, page: 1, per_page: 20 } },
+          ],
+        },
+      });
+      mocks.article.mockReturnValue({ data: article });
+
+      const { rerender } = render(
+        <FolderViewer
+          {...defaultProps}
+          openArticleId={99}
+          folder={makeFolder({ only_unread: true })}
+        />,
+      );
+
+      // Simulate refetch after mark-read: paged list is now empty
+      mocks.folderArticles.mockReturnValue({
+        ...defaultFolderArticlesResult,
+        data: {
+          pages: [{ data: [], meta: { total: 0, page: 1, per_page: 20 } }],
+        },
+      });
+
+      rerender(
+        <FolderViewer
+          {...defaultProps}
+          openArticleId={99}
+          folder={makeFolder({ only_unread: true })}
+        />,
+      );
+
+      // Pinned article keeps count at 1
+      expect(screen.getByTestId("article-list")).toHaveAttribute(
+        "data-count",
+        "1",
+      );
+    });
   });
 });
