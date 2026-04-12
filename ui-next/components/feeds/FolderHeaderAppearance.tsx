@@ -11,6 +11,8 @@ interface Props {
   onDensityChange?: (d: Density) => void;
   textSize?: TextSize;
   onTextSizeChange?: (s: TextSize) => void;
+  onlyUnread?: boolean;
+  onToggleUnread?: () => void;
 }
 
 export default function FolderHeaderAppearance({
@@ -20,8 +22,16 @@ export default function FolderHeaderAppearance({
   onDensityChange,
   textSize = "base",
   onTextSizeChange,
+  onlyUnread,
+  onToggleUnread,
 }: Props) {
-  if (!onViewModeChange && !onTextSizeChange && !onDensityChange) return null;
+  if (
+    !onViewModeChange &&
+    !onTextSizeChange &&
+    !onDensityChange &&
+    !onToggleUnread
+  )
+    return null;
 
   return (
     <div className="dropdown dropdown-end">
@@ -97,6 +107,20 @@ export default function FolderHeaderAppearance({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {onToggleUnread !== undefined && (
+            <div>
+              <p className="text-xs font-semibold opacity-50 uppercase tracking-wider mb-1.5">
+                Filter
+              </p>
+              <button
+                className={`btn btn-xs w-full ${onlyUnread ? "btn-primary" : "btn-ghost"}`}
+                onClick={onToggleUnread}
+              >
+                Unread only
+              </button>
             </div>
           )}
         </div>

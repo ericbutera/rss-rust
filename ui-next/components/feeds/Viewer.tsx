@@ -2,19 +2,16 @@
 
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
-  useArticle,
   useFeedArticles,
   useMarkArticleRead,
   useMarkFeedRead,
-  useToggleSaveArticle,
   useUnsubscribeFeed,
   useUpdateFeedView,
   type ArticleResponse,
   type FeedResponse,
 } from "@/lib/queries";
-import { useArticleKeyboardNav } from "@/lib/useArticleKeyboardNav";
-import { useViewPreferences } from "@/lib/useViewPreferences";
-import { useEffect, useRef, useState } from "react";
+import { useArticleViewer } from "@/lib/useArticleViewer";
+import { useState } from "react";
 import ArticleList from "./ArticleList";
 import FetchHistoryModal from "./FetchHistoryModal";
 import ViewHeader from "./ViewHeader";
@@ -43,8 +40,12 @@ export default function Viewer({
 }: ViewerProps) {
   const [onlySaved, setOnlySaved] = useState(false);
   const [onlyUnread, setOnlyUnread] = useState(feed.only_unread ?? false);
-  const { prefs, setDensity, setTextSize } = useViewPreferences();
+  const [showHistory, setShowHistory] = useState(false);
+
   const { mutateAsync: updateFeedView } = useUpdateFeedView();
+  const { mutate: markArticleRead } = useMarkArticleRead();
+  const { mutate: markFeedRead } = useMarkFeedRead();
+  const { mutateAsync: unsubscribeFeed } = useUnsubscribeFeed();
 
   const {
     data,
@@ -55,50 +56,25 @@ export default function Viewer({
     isFetchingNextPage,
   } = useFeedArticles(feed.id, onlySaved, onlyUnread);
 
-  const { mutate: markArticleRead } = useMarkArticleRead();
-  const { mutate: markFeedRead } = useMarkFeedRead();
-  const { mutateAsync: unsubscribeFeed } = useUnsubscribeFeed();
-  const [showHistory, setShowHistory] = useState(false);
-
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  // Infinite scroll: watch sentinel div at the bottom
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  function toggleArticle(article: ArticleResponse) {
-    if (openArticleId !== article.id) {
-      onToggleArticle(article.id);
-      if (!article.read_at) {
-        markArticleRead({ params: { path: { id: article.id } } }, feed.id);
-      }
-    } else {
-      onToggleArticle(null);
-    }
-  }
-
-  function handleMarkAllRead() {
-    markFeedRead({ params: { path: { id: feed.id } } });
-  }
-
-  async function handleUnsubscribe() {
-    const name = feedLabel(feed);
-    if (!confirm(`Unsubscribe from "${name}"?`)) return;
-    await unsubscribeFeed(feed.id);
-    onUnsubscribed();
-  }
+  const {
+    prefs,
+    setDensity,
+    setTextSize,
+    sentinelRef,
+    articles,
+    fullOpenArticle,
+    toggleArticle,
+  } = useArticleViewer({
+    openArticleId,
+    onToggleArticle,
+    articlePages: data?.pages,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    onMarkRead: (article) =>
+      markArticleRead({ params: { path: { id: article.id } } }, feed.id),
+    keyboardNavFeedId: feed.id,
+  });
 
   async function handleToggleUnread() {
     const next = !onlyUnread;
@@ -106,29 +82,11 @@ export default function Viewer({
     await updateFeedView(feed.id, feed.view_mode, next);
   }
 
-  const { mutate: toggleSave } = useToggleSaveArticle();
-  const pagedArticles = data?.pages.flatMap((p) => p.data) ?? [];
-  const { data: fullOpenArticle } = useArticle(openArticleId);
-
-  // Deep-link: if the article isn't in the paged list, prepend it
-  const articleInList =
-    openArticleId !== null && pagedArticles.some((a) => a.id === openArticleId);
-
-  const articles =
-    fullOpenArticle && !articleInList
-      ? [
-          fullOpenArticle as ArticleResponse,
-          ...pagedArticles.filter((a) => a.id !== openArticleId),
-        ]
-      : pagedArticles;
-
-  useArticleKeyboardNav({
-    articles,
-    openArticleId,
-    onToggleArticle,
-    onToggleSave: toggleSave,
-    feedId: feed.id,
-  });
+  async function handleUnsubscribe() {
+    if (!confirm(`Unsubscribe from "${feedLabel(feed)}"?`)) return;
+    await unsubscribeFeed(feed.id);
+    onUnsubscribed();
+  }
 
   const emptyMessage = onlySaved
     ? "No saved articles in this feed."
@@ -141,7 +99,9 @@ export default function Viewer({
       <ViewHeader
         feed={feed}
         onShowHistory={() => setShowHistory(true)}
-        onMarkAllRead={handleMarkAllRead}
+        onMarkAllRead={() =>
+          markFeedRead({ params: { path: { id: feed.id } } })
+        }
         onUnsubscribe={handleUnsubscribe}
         onlySaved={onlySaved}
         onToggleSaved={() => setOnlySaved((v) => !v)}
@@ -175,10 +135,9 @@ export default function Viewer({
           viewMode={feed.view_mode}
           density={prefs.density}
           textSize={prefs.textSize}
-          fullOpenArticle={fullOpenArticle as ArticleResponse | undefined}
+          fullOpenArticle={fullOpenArticle}
         />
 
-        {/* Infinite scroll sentinel */}
         <div ref={sentinelRef} className="py-2 text-center">
           {isFetchingNextPage && (
             <span className="loading loading-spinner loading-sm" />

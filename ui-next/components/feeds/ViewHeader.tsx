@@ -61,19 +61,13 @@ export default function ViewHeader({
           onDensityChange={onDensityChange}
           textSize={textSize}
           onTextSizeChange={onTextSizeChange}
+          onlyUnread={onlyUnread}
+          onToggleUnread={onToggleUnread}
         />
 
         <FolderHeaderSavedToggle
           onlySaved={onlySaved}
           onToggleSaved={onToggleSaved}
-        />
-
-        <FolderHeaderSavedToggle
-          onlySaved={onlyUnread}
-          onToggleSaved={onToggleUnread}
-          icon="unread"
-          activeLabel="Show all articles"
-          inactiveLabel="Show unread only"
         />
 
         <div className="tooltip tooltip-bottom" data-tip="Mark all read">

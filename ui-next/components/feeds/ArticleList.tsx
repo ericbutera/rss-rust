@@ -117,6 +117,9 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
 
   return (
     <div className="flex flex-col gap-3 pt-1">
+      {article.author && (
+        <p className="text-xs text-base-content/40">By {article.author}</p>
+      )}
       {safeDescription && !article.content && (
         <div
           className="article-body max-w-none"
@@ -146,7 +149,10 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
   );
 }
 
-/** Shows feed source label in folder views where articles come from multiple feeds. */
+/**
+ * Shows only the source feed icon (with tooltip) in folder views.
+ * Icon-only keeps rows compact; tooltip reveals the full feed name on hover.
+ */
 function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
   const [imgError, setImgError] = useState(false);
   if (!feed) return null;
@@ -160,32 +166,27 @@ function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
       }
     })();
   return (
-    <span className="flex items-center gap-1 text-xs opacity-40 shrink-0 max-w-[100px]">
-      {feed.favicon_url && !imgError ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`${API_URL}/favicons/${feed.favicon_url}`}
-          alt=""
-          width={12}
-          height={12}
-          className="w-3 h-3 shrink-0"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <FontAwesomeIcon icon={faRss} className="shrink-0" />
-      )}
-      <span className="truncate">{name}</span>
-    </span>
-  );
-}
-
-/** In single-feed view: shows the article author if available. */
-function ArticleAuthor({ author }: { author?: string | null }) {
-  if (!author) return null;
-  return (
-    <span className="text-xs opacity-40 shrink-0 truncate max-w-[120px]">
-      {author}
-    </span>
+    <div className="tooltip tooltip-left" data-tip={name}>
+      <span
+        role="img"
+        aria-label={name}
+        className="flex items-center opacity-40 shrink-0"
+      >
+        {feed.favicon_url && !imgError ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`${API_URL}/favicons/${feed.favicon_url}`}
+            alt=""
+            width={12}
+            height={12}
+            className="w-3 h-3 shrink-0"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <FontAwesomeIcon icon={faRss} className="shrink-0" />
+        )}
+      </span>
+    </div>
   );
 }
 
@@ -263,11 +264,7 @@ export default function ArticleList({
                     <span className="text-xs opacity-40">
                       {relativeTime(article.created_at)}
                     </span>
-                    {feedMap ? (
-                      <FeedLabel feed={articleFeed} />
-                    ) : (
-                      <ArticleAuthor author={article.author} />
-                    )}
+                    {feedMap && <FeedLabel feed={articleFeed} />}
                   </span>
                   <button
                     className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
@@ -331,13 +328,11 @@ export default function ArticleList({
                     <span className="text-xs opacity-40">
                       {relativeTime(article.created_at)}
                     </span>
-                    <span className="ml-auto">
-                      {feedMap ? (
+                    {feedMap && (
+                      <span className="ml-auto">
                         <FeedLabel feed={articleFeed} />
-                      ) : (
-                        <ArticleAuthor author={article.author} />
-                      )}
-                    </span>
+                      </span>
+                    )}
                     <button
                       className={`btn btn-ghost btn-xs btn-circle ${article.saved_at ? "text-primary" : "opacity-40 hover:opacity-100"}`}
                       onClick={(e) => {
@@ -401,11 +396,7 @@ export default function ArticleList({
                 <span className={isOpen ? "flex-1" : "truncate flex-1"}>
                   {article.title ?? article.url}
                 </span>
-                {feedMap ? (
-                  <FeedLabel feed={articleFeed} />
-                ) : (
-                  <ArticleAuthor author={article.author} />
-                )}
+                {feedMap && <FeedLabel feed={articleFeed} />}
                 <div
                   className="tooltip tooltip-left relative z-[2]"
                   data-tip={

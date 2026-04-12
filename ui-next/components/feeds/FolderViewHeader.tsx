@@ -49,19 +49,13 @@ export default function FolderViewHeader({
           onDensityChange={onDensityChange}
           textSize={textSize}
           onTextSizeChange={onTextSizeChange}
+          onlyUnread={onlyUnread}
+          onToggleUnread={onToggleUnread}
         />
 
         <FolderHeaderSavedToggle
           onlySaved={onlySaved}
           onToggleSaved={onToggleSaved}
-        />
-
-        <FolderHeaderSavedToggle
-          onlySaved={onlyUnread}
-          onToggleSaved={onToggleUnread}
-          icon="unread"
-          activeLabel="Show all articles"
-          inactiveLabel="Show unread only"
         />
 
         {/* Mark all read */}

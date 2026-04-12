@@ -2,19 +2,16 @@
 
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
-  useArticle,
   useFeeds,
   useFolderArticles,
   useMarkArticleRead,
   useMarkFolderRead,
-  useToggleSaveArticle,
   useUpdateFolderView,
   type ArticleResponse,
   type FolderResponse,
 } from "@/lib/queries";
-import { useArticleKeyboardNav } from "@/lib/useArticleKeyboardNav";
-import { useViewPreferences } from "@/lib/useViewPreferences";
-import { useEffect, useRef, useState } from "react";
+import { useArticleViewer } from "@/lib/useArticleViewer";
+import { useState } from "react";
 import ArticleList from "./ArticleList";
 import FolderViewHeader from "./FolderViewHeader";
 
@@ -31,8 +28,10 @@ export default function FolderViewer({
 }: FolderViewerProps) {
   const [onlySaved, setOnlySaved] = useState(false);
   const [onlyUnread, setOnlyUnread] = useState(folder.only_unread ?? false);
-  const { prefs, setDensity, setTextSize } = useViewPreferences();
+
   const { mutateAsync: updateFolderView } = useUpdateFolderView();
+  const { mutate: markArticleRead } = useMarkArticleRead();
+  const { mutate: markFolderRead } = useMarkFolderRead();
   const { data: feeds } = useFeeds();
 
   const {
@@ -44,38 +43,32 @@ export default function FolderViewer({
     isFetchingNextPage,
   } = useFolderArticles(folder.id, onlySaved, onlyUnread);
 
-  const { mutate: markArticleRead } = useMarkArticleRead();
-  const { mutate: markFolderRead } = useMarkFolderRead();
+  const {
+    prefs,
+    setDensity,
+    setTextSize,
+    sentinelRef,
+    articles,
+    fullOpenArticle,
+    toggleArticle,
+  } = useArticleViewer({
+    openArticleId,
+    onToggleArticle,
+    articlePages: data?.pages,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    onMarkRead: (article) =>
+      markArticleRead(
+        { params: { path: { id: article.id } } },
+        article.feed_id,
+      ),
+  });
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  function toggleArticle(article: ArticleResponse) {
-    if (openArticleId !== article.id) {
-      onToggleArticle(article.id);
-      if (!article.read_at) {
-        markArticleRead(
-          { params: { path: { id: article.id } } },
-          article.feed_id,
-        );
-      }
-    } else {
-      onToggleArticle(null);
-    }
+  async function handleToggleUnread() {
+    const next = !onlyUnread;
+    setOnlyUnread(next);
+    await updateFolderView(folder.id, folder.view_mode, next);
   }
 
   function handleMarkAllRead() {
@@ -84,25 +77,6 @@ export default function FolderViewer({
       .map((f) => f.id);
     markFolderRead(folderFeedIds);
   }
-
-  async function handleToggleUnread() {
-    const next = !onlyUnread;
-    setOnlyUnread(next);
-    await updateFolderView(folder.id, folder.view_mode, next);
-  }
-
-  const articles = data?.pages.flatMap((p) => p.data) ?? [];
-  const { mutate: toggleSave } = useToggleSaveArticle();
-
-  // Fetch full article for body rendering (list items are partial)
-  const { data: fullOpenArticle } = useArticle(openArticleId);
-
-  useArticleKeyboardNav({
-    articles,
-    openArticleId,
-    onToggleArticle,
-    onToggleSave: toggleSave,
-  });
 
   const emptyMessage = onlySaved
     ? "No saved articles in this folder."
@@ -138,18 +112,16 @@ export default function FolderViewer({
           <div className="text-center opacity-50 py-16">{emptyMessage}</div>
         )}
 
-        {!isLoading && !isError && articles.length > 0 && (
-          <ArticleList
-            articles={articles}
-            feeds={feeds}
-            openArticleId={openArticleId}
-            toggleArticle={toggleArticle}
-            viewMode={folder.view_mode}
-            density={prefs.density}
-            textSize={prefs.textSize}
-            fullOpenArticle={fullOpenArticle as ArticleResponse | undefined}
-          />
-        )}
+        <ArticleList
+          articles={articles}
+          feeds={feeds}
+          openArticleId={openArticleId}
+          toggleArticle={toggleArticle}
+          viewMode={folder.view_mode}
+          density={prefs.density}
+          textSize={prefs.textSize}
+          fullOpenArticle={fullOpenArticle}
+        />
 
         <div ref={sentinelRef} className="py-2 text-center">
           {isFetchingNextPage && (
