@@ -3,7 +3,7 @@
 import { type FeedResponse, type FolderResponse } from "@/lib/queries";
 import { usePendingVerifications } from "@/lib/usePendingVerifications";
 import { auth } from "@ericbutera/kaleido";
-import { faFolder, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faPlus, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
 import { useState } from "react";
@@ -16,6 +16,7 @@ interface MenuProps {
   selectedFolderId: number | null;
   onSelectFeed: (feed: FeedResponse | null) => void;
   onSelectFolder: (folder: FolderResponse | null) => void;
+  onClose?: () => void;
 }
 
 export default function Menu({
@@ -23,6 +24,7 @@ export default function Menu({
   selectedFolderId,
   onSelectFeed,
   onSelectFolder,
+  onClose,
 }: MenuProps) {
   const authApi = auth.useAuthApi();
   const { user } = authApi.useCurrentUser();
@@ -38,26 +40,38 @@ export default function Menu({
   return (
     <div className="flex flex-col h-full p-2">
       {/* Mobile-only nav links — combined menu replaces the main nav bar dropdown */}
-      <div className="lg:hidden border-b border-base-300 mb-2 pb-1 flex flex-wrap gap-0.5">
-        <Link href="/" className="btn btn-ghost btn-xs">
-          Home
-        </Link>
-        {user?.is_admin && (
-          <Link href="/admin" className="btn btn-ghost btn-xs">
-            Admin
+      <div className="lg:hidden border-b border-base-300 mb-2 pb-1 flex flex-wrap items-center gap-0.5">
+        <div className="flex-1 flex flex-wrap gap-0.5">
+          <Link href="/" className="btn btn-ghost btn-xs">
+            Home
           </Link>
+          {user?.is_admin && (
+            <Link href="/admin" className="btn btn-ghost btn-xs">
+              Admin
+            </Link>
+          )}
+          <Link href="/account" className="btn btn-ghost btn-xs">
+            Account
+          </Link>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs"
+            onClick={() => logout.mutateAsync()}
+            disabled={logout.isPending}
+          >
+            {logout.isPending ? "Signing out..." : "Sign out"}
+          </button>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            aria-label="close sidebar"
+            className="btn btn-ghost btn-sm btn-circle shrink-0"
+            onClick={onClose}
+          >
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
         )}
-        <Link href="/account" className="btn btn-ghost btn-xs">
-          Account
-        </Link>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs"
-          onClick={() => logout.mutateAsync()}
-          disabled={logout.isPending}
-        >
-          {logout.isPending ? "Signing out..." : "Sign out"}
-        </button>
       </div>
 
       <div className="flex items-center justify-between px-2 py-3">

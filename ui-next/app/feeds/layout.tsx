@@ -13,7 +13,7 @@ import {
   type FeedResponse,
   type FolderResponse,
 } from "@/lib/queries";
-import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -60,14 +60,14 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
           () => (
             <button
               type="button"
-              aria-label={sidebarOpen ? "close sidebar" : "open sidebar"}
+              aria-label="open sidebar"
               className="btn btn-square btn-ghost"
-              onClick={() => setSidebarOpen((v) => !v)}
+              onClick={() => setSidebarOpen(true)}
             >
-              <FontAwesomeIcon icon={sidebarOpen ? faXmark : faBars} />
+              <FontAwesomeIcon icon={faBars} />
             </button>
           ),
-          [sidebarOpen],
+          [],
         )}
       >
         <Layout>
@@ -75,7 +75,7 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
             {/* Mobile overlay */}
             {sidebarOpen && (
               <div
-                className="fixed inset-0 z-20 bg-black/30 lg:hidden"
+                className="fixed inset-0 z-[55] bg-black/30 lg:hidden"
                 onClick={() => setSidebarOpen(false)}
               />
             )}
@@ -83,7 +83,7 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
             {/* Sidebar */}
             <aside
               className={`
-              fixed inset-y-0 left-0 z-30 w-72 bg-base-200 transition-transform duration-200 overflow-x-hidden overflow-y-auto
+              fixed inset-y-0 left-0 z-[60] w-72 bg-base-200 transition-transform duration-200 overflow-x-hidden overflow-y-auto
               lg:static lg:h-full lg:[translate:none] lg:z-auto
               ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
             `}
@@ -93,6 +93,7 @@ function FeedsLayoutInner({ children }: { children: ReactNode }) {
                 selectedFolderId={selectedFolderId}
                 onSelectFeed={handleSelectFeed}
                 onSelectFolder={handleSelectFolder}
+                onClose={() => setSidebarOpen(false)}
               />
             </aside>
 
