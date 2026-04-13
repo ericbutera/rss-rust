@@ -75,7 +75,7 @@ export default function FolderViewer({
     const folderFeedIds = feeds
       .filter((f) => f.folder_id === folder.id)
       .map((f) => f.id);
-    markFolderRead(folderFeedIds);
+    markFolderRead(folderFeedIds, folder.id);
   }
 
   const emptyMessage = onlySaved

@@ -86,9 +86,14 @@ export function useMarkFeedRead() {
   return {
     ...mutation,
     mutate: (vars: Parameters<typeof mutation.mutate>[0]) => {
+      const feedId = vars.params.path.id;
       mutation.mutate(vars, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["get", "/feeds"] });
+          // Refetch the article list so read state updates immediately.
+          queryClient.invalidateQueries({
+            queryKey: ["feeds", feedId, "articles"],
+          });
         },
       });
     },
@@ -390,7 +395,7 @@ export function useMarkFolderRead() {
   const queryClient = useQueryClient();
   const mutation = $api.useMutation("put", "/feeds/{id}/read");
   return {
-    mutate: (feedIds: number[]) => {
+    mutate: (feedIds: number[], folderId?: number) => {
       let pending = feedIds.length;
       if (pending === 0) return;
       feedIds.forEach((feedId) => {
@@ -404,6 +409,12 @@ export function useMarkFolderRead() {
                 queryClient.invalidateQueries({
                   queryKey: ["get", "/folders"],
                 });
+                // Refetch the folder article list so read state updates.
+                if (folderId !== undefined) {
+                  queryClient.invalidateQueries({
+                    queryKey: ["folders", folderId, "articles"],
+                  });
+                }
               }
             },
           },

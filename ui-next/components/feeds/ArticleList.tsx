@@ -221,9 +221,15 @@ export default function ArticleList({
   const feedMap = feeds
     ? Object.fromEntries(feeds.map((f) => [f.id, f]))
     : null;
-  const articleRead = (article: ArticleResponse) =>
-    Boolean(article.read_at) ||
-    (!!lastReadAt && article.created_at <= lastReadAt);
+  // In folder view (feedMap available) use the article's own feed's last_read_at
+  // so each feed's mark-all-read timestamp is honoured independently.
+  const articleRead = (article: ArticleResponse) => {
+    if (Boolean(article.read_at)) return true;
+    const effectiveLastReadAt = feedMap
+      ? feedMap[article.feed_id]?.last_read_at
+      : lastReadAt;
+    return !!effectiveLastReadAt && article.created_at <= effectiveLastReadAt;
+  };
 
   if (viewMode === "cards") {
     return (
