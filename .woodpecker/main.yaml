@@ -32,7 +32,7 @@ steps:
     image: woodpeckerci/plugin-kaniko
     depends_on: [test-rust, test-ui]
     settings:
-      registry: registry.container-registry:5000
+      registry: registry.registry:5000
       repo: rss-api
       tags: ${CI_COMMIT_SHA},latest
       insecure: true
@@ -48,7 +48,7 @@ steps:
     image: woodpeckerci/plugin-kaniko
     depends_on: [build-api]
     settings:
-      registry: registry.container-registry:5000
+      registry: registry.registry:5000
       repo: rss-worker
       tags: ${CI_COMMIT_SHA},latest
       insecure: true
@@ -70,7 +70,7 @@ steps:
     image: woodpeckerci/plugin-kaniko
     depends_on: [create-ui-env]
     settings:
-      registry: registry.container-registry:5000
+      registry: registry.registry:5000
       repo: rss-ui
       tags: ${CI_COMMIT_SHA},latest
       insecure: true
