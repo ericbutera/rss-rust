@@ -65,16 +65,6 @@ tasks:
     status:
       - test -f ui-next/package.json
 
-  ui-next:env:prod:
-    desc: Generate the rss ui-next .env.production file
-    cmds:
-      - sh ui-next/create-env.sh
-
-  ui-next:env:staging:
-    desc: Alias for the rss ui-next env generator while one deployment env exists
-    cmds:
-      - task ui-next:env:prod
-
   ui-next:test:watch:
     desc: Run the rss Next frontend tests in watch mode
     dir: ui-next
@@ -91,16 +81,6 @@ tasks:
     desc: Build the rss API
     cmds:
       - cargo build --release --bin api
-
-  ui:env:prod:
-    desc: Legacy alias for ui-next:env:prod
-    cmds:
-      - task ui-next:env:prod
-
-  ui:env:staging:
-    desc: Legacy alias for ui-next:env:staging
-    cmds:
-      - task ui-next:env:staging
 
   worker:dev:
     desc: Start the rss worker
@@ -139,11 +119,6 @@ tasks:
     cmds:
       - pulumi stack select ericbutera/rss/rss --non-interactive
       - pulumi up --yes --skip-preview
-
-  deploy:staging:
-    desc: Alias for the rss deploy target while only a production stack exists
-    cmds:
-      - task deploy:prod
 
   openapi:react-query:
     desc: Generate OpenAPI TypeScript definitions from running API

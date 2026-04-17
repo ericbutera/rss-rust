@@ -1,6 +1,6 @@
 "use client";
 
-import { API_URL } from "@/lib/config";
+import { useConfig } from "@/lib/config-context";
 import type { FeedResponse } from "@/lib/queries";
 import { faRss } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -27,6 +27,7 @@ export default function FeedHeaderTitle({
   renaming,
   onDoneRename,
 }: Props) {
+  const config = useConfig();
   const [faviconError, setFaviconError] = useState(false);
 
   return (
@@ -36,7 +37,7 @@ export default function FeedHeaderTitle({
           {feed.favicon_url && !faviconError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={`${API_URL}/favicons/${feed.favicon_url}`}
+              src={`${config.API_URL}/favicons/${feed.favicon_url}`}
               alt=""
               width={14}
               height={14}

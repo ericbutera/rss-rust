@@ -1,6 +1,6 @@
 "use client";
 
-import { API_URL } from "@/lib/config";
+import { useConfig } from "@/lib/config-context";
 import type { FeedResponse } from "@/lib/queries";
 import type { Verifications } from "@/lib/usePendingVerifications";
 import { useSortable } from "@dnd-kit/sortable";
@@ -57,6 +57,7 @@ export default function FeedListItem({
       }
     })();
   const hasUnread = feed.unread_count > 0;
+  const config = useConfig();
 
   return (
     <li ref={setNodeRef} style={style} className="w-full">
@@ -70,7 +71,7 @@ export default function FeedListItem({
       >
         {feed.favicon_url ? (
           <img
-            src={`${API_URL}/favicons/${feed.favicon_url}`}
+            src={`${config.API_URL}/favicons/${feed.favicon_url}`}
             alt=""
             width={14}
             height={14}

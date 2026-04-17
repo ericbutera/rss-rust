@@ -8,7 +8,15 @@ vi.mock("@/lib/queries", () => ({
 }));
 
 vi.mock("@/lib/config", () => ({
-  API_URL: "http://localhost:3000/api",
+  config: {
+    API_URL: "http://localhost:3000/api",
+  },
+}));
+
+vi.mock("@/lib/config-context", () => ({
+  useConfig: () => ({
+    API_URL: "http://localhost:3000/api",
+  }),
 }));
 
 // ─── factories ────────────────────────────────────────────────────────────────

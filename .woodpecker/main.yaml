@@ -60,15 +60,9 @@ steps:
       cache: true
       cache_repo: rss-worker-cache
 
-  - name: create-ui-env
-    image: alpine:latest
-    depends_on: [build-worker]
-    commands:
-      - sh ui-next/create-env.sh
-
   - name: build-ui
     image: woodpeckerci/plugin-kaniko
-    depends_on: [create-ui-env]
+    depends_on: [build-worker]
     settings:
       registry: registry.registry:5000
       repo: rss-ui

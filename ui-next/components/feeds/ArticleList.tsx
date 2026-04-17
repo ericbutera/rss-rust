@@ -1,6 +1,6 @@
 "use client";
 
-import { API_URL } from "@/lib/config";
+import { useConfig } from "@/lib/config-context";
 import {
   useToggleSaveArticle,
   type ArticleResponse,
@@ -154,6 +154,7 @@ function ArticleBody({ article }: { article: ArticleResponse }) {
  * Icon-only keeps rows compact; tooltip reveals the full feed name on hover.
  */
 function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
+  const config = useConfig();
   const [imgError, setImgError] = useState(false);
   if (!feed) return null;
   const name =
@@ -175,7 +176,7 @@ function FeedLabel({ feed }: { feed: FeedResponse | undefined }) {
         {feed.favicon_url && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={`${API_URL}/favicons/${feed.favicon_url}`}
+            src={`${config.API_URL}/favicons/${feed.favicon_url}`}
             alt=""
             width={12}
             height={12}

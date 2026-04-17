@@ -1,10 +1,13 @@
 import type { components, paths } from "@/lib/react-query/api";
 import { createClient, createFetchClient } from "@ericbutera/kaleido";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { API_URL } from "./config";
+import { config } from "./config";
 
-const fetchClient = createFetchClient({ baseUrl: API_URL });
-export const $api = createClient<paths>(fetchClient);
+function createApiClient() {
+  return createClient<paths>(createFetchClient({ baseUrl: config.API_URL }));
+}
+
+export const $api = createApiClient();
 
 export type FeedResponse = components["schemas"]["FeedResponse"];
 export type ArticleResponse = components["schemas"]["ArticleResponse"];
@@ -52,7 +55,7 @@ export function useFeedArticles(
       });
       if (onlySaved) params.set("only_saved", "true");
       if (onlyUnread) params.set("only_unread", "true");
-      const url = `${API_URL}/feeds/${feedId}/articles?${params}`;
+      const url = `${config.API_URL}/feeds/${feedId}/articles?${params}`;
       const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return resp.json() as Promise<ArticlesPage>;
@@ -443,7 +446,7 @@ export function useFolderArticles(
       });
       if (onlySaved) params.set("only_saved", "true");
       if (onlyUnread) params.set("only_unread", "true");
-      const url = `${API_URL}/folders/${folderId}/articles?${params}`;
+      const url = `${config.API_URL}/folders/${folderId}/articles?${params}`;
       const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return resp.json() as Promise<
