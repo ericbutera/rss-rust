@@ -6,7 +6,36 @@ A simple RSS reader application, built with Rust and Next.js. It was scaffolded 
 
 ## Quickstart
 
-Run the project using Docker Compose `docker compose up`.
+From the repo root:
+
+```sh
+task ui-next:dev
+```
+
+Common repo-local commands:
+
+```sh
+task ui-next:typecheck
+task ui-next:test
+task ui-next:env:staging
+task ui-next:env:prod
+task api:dev
+task worker:dev
+task openapi:react-query
+```
+
+From the workspace root:
+
+```sh
+task rss:ui-next:dev
+task rss:ui-next:typecheck
+task rss:ui-next:env:staging
+task rss:ui-next:env:prod
+task rss:test
+task openapi:rss
+```
+
+Frontend env defaults live in `ui-next/.env.example`.
 
 ## Architecture
 
@@ -49,7 +78,21 @@ The project uses [woodpecker-ci](https://woodpecker-ci.org/) with pipelines defi
 
 ## Deployment
 
-I currently deploy into my homelab using [Pulumi](https://www.pulumi.com/) for infrastructure management.
+Deployment is wrapped in the repo Taskfile:
+
+```sh
+task deploy:staging
+task deploy:prod
+```
+
+From the workspace root:
+
+```sh
+task deploy:rss:staging
+task deploy:rss:prod
+```
+
+Pulumi remains in `pulumi-iac/rss`, but the human-facing entrypoint should be `task`.
 
 ---
 

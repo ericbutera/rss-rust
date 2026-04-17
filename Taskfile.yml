@@ -2,15 +2,18 @@ version: "3"
 
 vars:
   PROJECT_NAME: "rss"
+  PULUMI_DIR: "../pulumi-iac/rss"
 
 tasks:
   ui:deps:
+    desc: Install legacy ui dependencies when the legacy frontend exists
     dir: ui
     deps: [ui:npm-install]
     status:
       - test -f ui/package.json
 
   ui:npm-install:
+    desc: Install legacy ui dependencies with pnpm
     dir: ui
     cmds:
       - pnpm install
@@ -18,6 +21,7 @@ tasks:
       - test -f ui/package.json
 
   ui:dev:
+    desc: Start the legacy rss frontend when present
     dir: ui
     deps: [ui:deps]
     cmds:
@@ -26,6 +30,7 @@ tasks:
       - test -f ui/package.json
 
   ui-next:deps:
+    desc: Install ui-next dependencies
     dir: ui-next
     cmds:
       - pnpm install
@@ -33,6 +38,7 @@ tasks:
       - test -f ui-next/package.json
 
   ui-next:dev:
+    desc: Start the rss Next frontend
     dir: ui-next
     deps: [ui-next:deps]
     cmds:
@@ -41,45 +47,103 @@ tasks:
       - test -f ui-next/package.json
 
   ui-next:test:
+    desc: Typecheck and test the rss Next frontend
     dir: ui-next
     deps: [ui-next:deps]
     cmds:
       - pnpm run typecheck
       - pnpm run test
+    status:
+      - test -f ui-next/package.json
+
+  ui-next:typecheck:
+    desc: Typecheck the rss Next frontend
+    dir: ui-next
+    deps: [ui-next:deps]
+    cmds:
+      - pnpm run typecheck
+    status:
+      - test -f ui-next/package.json
+
+  ui-next:env:prod:
+    desc: Generate the rss ui-next .env.production file
+    cmds:
+      - sh ui-next/create-env.sh
+
+  ui-next:env:staging:
+    desc: Alias for the rss ui-next env generator while one deployment env exists
+    cmds:
+      - task ui-next:env:prod
 
   ui-next:test:watch:
+    desc: Run the rss Next frontend tests in watch mode
     dir: ui-next
     deps: [ui-next:deps]
     cmds:
       - pnpm run test:watch
 
   api:dev:
+    desc: Start the rss API
     cmds:
       - cargo run --bin api
 
   api:build:
+    desc: Build the rss API
     cmds:
       - cargo build --release --bin api
 
+  ui:env:prod:
+    desc: Legacy alias for ui-next:env:prod
+    cmds:
+      - task ui-next:env:prod
+
+  ui:env:staging:
+    desc: Legacy alias for ui-next:env:staging
+    cmds:
+      - task ui-next:env:staging
+
   worker:dev:
+    desc: Start the rss worker
     cmds:
       - cargo run --bin worker
 
+  worker:build:
+    desc: Build the rss worker
+    cmds:
+      - cargo build --release --bin worker
+
   migration:up:
+    desc: Run rss database migrations
     dir: migration
     cmds:
       - cargo run -- up
 
   test:
+    desc: Run rss Rust tests
     cmds:
       - cargo test
 
   test:worker:
+    desc: Run rss worker tests
     cmds:
       - cargo test --test worker
 
   test:worker:integration:
+    desc: Run ignored rss worker integration tests
+    cmds:
       - cargo test -p worker -- --ignored
+
+  deploy:prod:
+    desc: Run pulumi up for the rss production stack
+    dir: '{{.PULUMI_DIR}}'
+    cmds:
+      - pulumi stack select ericbutera/rss/rss --non-interactive
+      - pulumi up --yes --skip-preview
+
+  deploy:staging:
+    desc: Alias for the rss deploy target while only a production stack exists
+    cmds:
+      - task deploy:prod
 
   openapi:react-query:
     desc: Generate OpenAPI TypeScript definitions from running API
