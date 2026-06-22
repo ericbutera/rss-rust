@@ -1,4 +1,5 @@
 use kaleido::auth::openapi as auth_openapi;
+use kaleido::background_jobs::openapi as background_jobs_openapi;
 use kaleido::glass::openapi as glass_openapi;
 use kaleido::glass::SecurityAddon;
 use utoipa::OpenApi;
@@ -21,6 +22,10 @@ use utoipa::OpenApi;
         glass_openapi::paths::list_flags,
         glass_openapi::paths::update_flag,
         glass_openapi::paths::get_metrics,
+        background_jobs_openapi::paths::list_tasks,
+        background_jobs_openapi::paths::get_task,
+        background_jobs_openapi::paths::rerun_task,
+        background_jobs_openapi::paths::cancel_task,
         crate::controllers::feeds::list_feeds,
         crate::controllers::feeds::create_feed,
         crate::controllers::feeds::unsubscribe_feed,
@@ -66,6 +71,10 @@ use utoipa::OpenApi;
             glass_openapi::schemas::PaginatedResponse<glass_openapi::schemas::PublicFlagResponse>,
             glass_openapi::schemas::SystemMetrics,
             kaleido::glass::data::pagination::PaginationParams,
+            background_jobs_openapi::schemas::PaginatedResponse<background_jobs_openapi::schemas::TaskResponse>,
+            background_jobs_openapi::schemas::PaginationMetadata,
+            background_jobs_openapi::schemas::TaskResponse,
+            background_jobs_openapi::schemas::TaskDetailResponse,
             kaleido::glass::data::pagination::PaginatedResponse<crate::controllers::feeds::ArticleResponse>,
             kaleido::glass::data::pagination::PaginatedResponse<crate::controllers::feeds::FetchHistoryResponse>,
             crate::controllers::feeds::CreateFeedRequest,
