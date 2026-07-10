@@ -42,8 +42,8 @@ impl OllamaClient {
 
     /// Build a client using the `OLLAMA_URL` env var (defaults to `http://ollama:11434`).
     pub fn from_env() -> Self {
-        let base_url = std::env::var("OLLAMA_URL")
-            .unwrap_or_else(|_| "http://ollama:11434".to_string());
+        let base_url =
+            std::env::var("OLLAMA_URL").unwrap_or_else(|_| "http://ollama:11434".to_string());
         Self::new(base_url)
     }
 
@@ -125,7 +125,10 @@ mod tests {
 
         let client = OllamaClient::new(srv.url());
         let result = client.generate("prompt").await;
-        assert!(result.is_err(), "Missing 'response' field should cause an error");
+        assert!(
+            result.is_err(),
+            "Missing 'response' field should cause an error"
+        );
     }
 
     #[tokio::test]

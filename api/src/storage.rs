@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::tasks::TaskQueue;
 use crate::tasks::{create_auth_service, AppAuthService};
 use kaleido::auth::controllers::oauth::OAuthRouteStorage;
-use kaleido::auth::{AuthStorage};
+use kaleido::auth::AuthStorage;
 use kaleido::background_jobs::admin::BackgroundTasksStorage;
 use kaleido::glass::feature_flags::{FeatureFlagService, FeatureFlagStorage};
 use kaleido::glass::metrics_controller::MetricsStorage;

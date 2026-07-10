@@ -103,6 +103,16 @@ tasks:
     cmds:
       - cargo test
 
+  fmt:
+    desc: Format the rss Rust workspace
+    cmds:
+      - cargo fmt --all
+
+  fmt:check:
+    desc: Check rss Rust formatting without writing changes
+    cmds:
+      - cargo fmt --all --check
+
   test:worker:
     desc: Run rss worker tests
     cmds:
