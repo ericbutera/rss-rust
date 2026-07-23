@@ -34,8 +34,6 @@ tasks:
     dir: ui-next
     cmds:
       - pnpm install
-    status:
-      - test -f ui-next/package.json
 
   ui-next:dev:
     desc: Start the rss Next frontend
@@ -43,8 +41,6 @@ tasks:
     deps: [ui-next:deps]
     cmds:
       - pnpm run dev
-    status:
-      - test -f ui-next/package.json
 
   ui-next:test:
     desc: Typecheck and test the rss Next frontend
@@ -53,8 +49,6 @@ tasks:
     cmds:
       - pnpm run typecheck
       - pnpm run test
-    status:
-      - test -f ui-next/package.json
 
   ui-next:typecheck:
     desc: Typecheck the rss Next frontend
@@ -62,8 +56,6 @@ tasks:
     deps: [ui-next:deps]
     cmds:
       - pnpm run typecheck
-    status:
-      - test -f ui-next/package.json
 
   ui-next:test:watch:
     desc: Run the rss Next frontend tests in watch mode
@@ -71,6 +63,21 @@ tasks:
     deps: [ui-next:deps]
     cmds:
       - pnpm run test:watch
+
+  kaleido:version:
+    desc: Print the rss ui-next Kaleido dependency version
+    dir: ui-next
+    cmds:
+      - node -p "require('./package.json').dependencies['@ericbutera/kaleido']"
+
+  kaleido:upgrade:
+    desc: Upgrade rss ui-next to @ericbutera/kaleido VERSION=x.y.z
+    requires:
+      vars: [VERSION]
+    dir: ui-next
+    cmds:
+      - pnpm up @ericbutera/kaleido@{{.VERSION}}
+      - pnpm typecheck
 
   api:dev:
     desc: Start the rss API

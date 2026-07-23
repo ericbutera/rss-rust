@@ -15,17 +15,18 @@ task ui-next:dev
 
 Use `task --list` to discover the current repo-local task surface.
 
-From the workspace root:
+The Next UI reads browser-facing runtime config from the server at launch. CI builds one UI image, and Pulumi injects deploy-specific values into the container.
+
+## Kaleido Dependency
+
+Kaleido updates are explicit in this repo:
 
 ```sh
-task --list
-task rss:ui-next:dev
-task rss:ui-next:typecheck
-task rss:test
-task openapi:rss
+task kaleido:version
+VERSION=0.7.0 task kaleido:upgrade
 ```
 
-The Next UI reads browser-facing runtime config from the server at launch. CI builds one UI image, and Pulumi injects deploy-specific values into the container.
+The upgrade task updates `ui-next/package.json` and `ui-next/pnpm-lock.yaml`, then runs `pnpm typecheck`.
 
 ## Architecture
 
@@ -72,12 +73,6 @@ Deployment is wrapped in the repo Taskfile:
 
 ```sh
 task deploy:prod
-```
-
-From the workspace root:
-
-```sh
-task deploy:rss:prod
 ```
 
 Pulumi remains in `pulumi-iac/rss`, but the human-facing entrypoint should be `task`.
