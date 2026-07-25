@@ -69,14 +69,9 @@ export default function Navigation() {
                   </button>
                 </li>
               ) : (
-                <>
-                  <li>
-                    <Link href="/login">Login</Link>
-                  </li>
-                  <li>
-                    <Link href="/signup">Sign up</Link>
-                  </li>
-                </>
+                <li>
+                  <Link href="/login">Login</Link>
+                </li>
               )}
             </ul>
           </div>
@@ -124,16 +119,11 @@ export default function Navigation() {
               </button>
             </li>
           ) : (
-            <>
-              <li>
-                <Link href="/login">Login</Link>
-              </li>
-              <li>
-                <Link href="/signup" className="btn btn-primary">
-                  Sign up
-                </Link>
-              </li>
-            </>
+            <li>
+              <Link href="/login" className="btn btn-primary">
+                Login
+              </Link>
+            </li>
           )}
         </ul>
       </div>

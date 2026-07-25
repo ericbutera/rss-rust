@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::tasks::TaskQueue;
 use crate::tasks::{create_auth_service, AppAuthService};
 use kaleido::auth::controllers::oauth::OAuthRouteStorage;
-use kaleido::auth::AuthStorage;
+use kaleido::auth::{AuthRouteStorage, AuthStorage};
 use kaleido::background_jobs::admin::BackgroundTasksStorage;
 use kaleido::glass::feature_flags::{FeatureFlagService, FeatureFlagStorage};
 use kaleido::glass::metrics_controller::MetricsStorage;
@@ -71,7 +71,7 @@ impl AuthStorage for AppStorage {
     }
 }
 
-impl kaleido::auth::AuthRouteStorage for AppStorage {
+impl AuthRouteStorage for AppStorage {
     type EmailService = kaleido::auth::AuthEmailService;
     type CooldownManager = kaleido::auth::DefaultCooldownManager;
     type AuditLogger = kaleido::auth::SeaOrmAuditLogger;
@@ -89,6 +89,14 @@ impl kaleido::auth::AuthRouteStorage for AppStorage {
     fn frontend_url(&self) -> &str {
         &Config::get().frontend_url
     }
+
+    fn password_auth_enabled(&self) -> bool {
+        Config::get().auth_password_enabled
+    }
+
+    fn registration_enabled(&self) -> bool {
+        Config::get().auth_registration_enabled
+    }
 }
 
 impl OAuthRouteStorage for AppStorage {
@@ -97,7 +105,11 @@ impl OAuthRouteStorage for AppStorage {
     }
 
     fn oauth_enabled(&self) -> bool {
-        false
+        kaleido::auth::OAuthProviderService::is_any_provider_enabled()
+    }
+
+    fn oauth_provider_enabled(&self, provider: &str) -> bool {
+        kaleido::auth::OAuthProviderService::is_provider_enabled(provider)
     }
 }
 

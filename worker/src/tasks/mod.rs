@@ -1,10 +1,7 @@
 pub mod processors;
 
 use api::config::Config;
-use kaleido::auth::worker::{
-    register_all_auth_processors as register_shared_auth_processors, AuthWorkerConfig,
-    AuthWorkerSmtpConfig,
-};
+use kaleido::auth::worker::{AuthWorkerConfig, AuthWorkerSmtpConfig};
 use kaleido::background_jobs::worker::{spawn_scheduler, TaskProcessor, TaskWorker, WorkerError};
 use kaleido::background_jobs::{DurableStorage, TaskQueue};
 use std::sync::Arc;
@@ -15,7 +12,7 @@ pub fn register_auth_email_processors(
     worker: TaskWorker,
     cfg: &Config,
 ) -> Result<TaskWorker, WorkerError> {
-    let auth_worker_config = AuthWorkerConfig::new(
+    let auth_config = AuthWorkerConfig::new(
         cfg.app_name.clone(),
         AuthWorkerSmtpConfig {
             host: cfg.smtp_host.clone(),
@@ -26,7 +23,8 @@ pub fn register_auth_email_processors(
             from_name: cfg.smtp_from_name.clone(),
         },
     );
-    let worker = register_shared_auth_processors(worker, &auth_worker_config)?;
+    let worker = kaleido::auth::worker::register_auth_email_processors(worker, &auth_config)?;
+
     let email_notification = Arc::new(EmailNotification::new(cfg)?);
 
     Ok(worker.register_processor(email_notification))
