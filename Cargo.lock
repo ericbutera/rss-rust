@@ -2003,7 +2003,7 @@ dependencies = [
 
 [[package]]
 name = "kaleido"
-version = "0.2.0"
+version = "0.8.5"
 dependencies = [
  "argon2",
  "async-trait",
@@ -2022,6 +2022,7 @@ dependencies = [
  "rand 0.8.5",
  "reqwest 0.12.28",
  "sea-orm",
+ "sea-orm-migration",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -2033,14 +2034,6 @@ dependencies = [
  "utoipa",
  "uuid",
  "validator 0.18.1",
-]
-
-[[package]]
-name = "kaleido_migrations"
-version = "0.1.0"
-dependencies = [
- "sea-orm-migration",
- "tokio",
 ]
 
 [[package]]
@@ -2315,7 +2308,7 @@ name = "migration"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "kaleido_migrations",
+ "kaleido",
  "sea-orm-migration",
  "tokio",
 ]

@@ -9,11 +9,11 @@ A simple RSS reader application, built with Rust and Next.js. It was scaffolded 
 From the repo root:
 
 ```sh
-task --list
-task ui-next:dev
+mise tasks
+mise run ui-next:dev
 ```
 
-Use `task --list` to discover the current repo-local task surface.
+Use `mise tasks` to discover the current repo-local command surface.
 
 The Next UI reads browser-facing runtime config from the server at launch. CI builds one UI image, and Pulumi injects deploy-specific values into the container.
 
@@ -22,11 +22,11 @@ The Next UI reads browser-facing runtime config from the server at launch. CI bu
 Kaleido updates are explicit in this repo:
 
 ```sh
-task kaleido:version
-VERSION=0.7.0 task kaleido:upgrade
+mise run kaleido:status
+VERSION=0.8.5 mise run kaleido:update
 ```
 
-The upgrade task updates `ui-next/package.json` and `ui-next/pnpm-lock.yaml`, then runs `pnpm typecheck`.
+The update task updates `ui-next/package.json` and `ui-next/pnpm-lock.yaml`, then runs the frontend typecheck. Rust Kaleido is still sourced through the local/git Cargo patch model used by this app.
 
 ## Architecture
 
@@ -69,13 +69,13 @@ The project uses [woodpecker-ci](https://woodpecker-ci.org/) with pipelines defi
 
 ## Deployment
 
-Deployment is wrapped in the repo Taskfile:
+Deployment is wrapped in the repo mise tasks:
 
 ```sh
-task deploy:prod
+mise run deploy:prod
 ```
 
-Pulumi remains in `pulumi-iac/rss`, but the human-facing entrypoint should be `task`.
+Pulumi remains in `pulumi-iac/rss`, but the human-facing entrypoint should be `mise`.
 
 ---
 

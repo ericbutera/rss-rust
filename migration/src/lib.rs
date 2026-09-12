@@ -23,46 +23,27 @@ pub struct Migrator;
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
         // Load Kaleido (external) migrations first and sort them by migration name
-        let mut v = kaleido_migrations::external_migrations();
+        let mut v = kaleido::migrations::external_migrations();
         v.sort_by_key(|m| m.name().to_string());
 
         // Collect local migrations, sort them, then append so Kaleido runs first
-        let mut locals: Vec<Box<dyn MigrationTrait>> = Vec::new();
-        locals.push(Box::new(m20260307_120000_init::Migration));
-        locals.push(Box::new(
-            m20260309_000000_add_unread_count_to_user_feeds::Migration,
-        ));
-        locals.push(Box::new(
-            m20260309_100000_add_fetch_history_fields::Migration,
-        ));
-        locals.push(Box::new(
-            m20260310_000000_add_fetch_interval_to_feeds::Migration,
-        ));
-        locals.push(Box::new(
-            m20260310_100000_add_sort_order_to_user_feeds::Migration,
-        ));
-        locals.push(Box::new(
-            m20260317_000000_add_saved_at_to_user_articles::Migration,
-        ));
-        locals.push(Box::new(
-            m20260317_100000_add_feed_discovery_fields::Migration,
-        ));
-        locals.push(Box::new(
-            m20260317_200000_add_name_override_to_user_feeds::Migration,
-        ));
-        locals.push(Box::new(m20260318_000000_add_favicon_to_feeds::Migration));
-        locals.push(Box::new(
-            m20260320_000000_add_view_mode_to_user_feeds::Migration,
-        ));
-        locals.push(Box::new(m20260320_100000_create_feed_folders::Migration));
-        locals.push(Box::new(
-            m20260320_200000_add_folder_id_to_user_feeds::Migration,
-        ));
-        locals.push(Box::new(
-            m20260321_000000_add_view_mode_to_feed_folders::Migration,
-        ));
-        locals.push(Box::new(m20260406_000000_add_only_unread::Migration));
-        locals.push(Box::new(m20260406_100000_add_author_to_articles::Migration));
+        let mut locals: Vec<Box<dyn MigrationTrait>> = vec![
+            Box::new(m20260307_120000_init::Migration),
+            Box::new(m20260309_000000_add_unread_count_to_user_feeds::Migration),
+            Box::new(m20260309_100000_add_fetch_history_fields::Migration),
+            Box::new(m20260310_000000_add_fetch_interval_to_feeds::Migration),
+            Box::new(m20260310_100000_add_sort_order_to_user_feeds::Migration),
+            Box::new(m20260317_000000_add_saved_at_to_user_articles::Migration),
+            Box::new(m20260317_100000_add_feed_discovery_fields::Migration),
+            Box::new(m20260317_200000_add_name_override_to_user_feeds::Migration),
+            Box::new(m20260318_000000_add_favicon_to_feeds::Migration),
+            Box::new(m20260320_000000_add_view_mode_to_user_feeds::Migration),
+            Box::new(m20260320_100000_create_feed_folders::Migration),
+            Box::new(m20260320_200000_add_folder_id_to_user_feeds::Migration),
+            Box::new(m20260321_000000_add_view_mode_to_feed_folders::Migration),
+            Box::new(m20260406_000000_add_only_unread::Migration),
+            Box::new(m20260406_100000_add_author_to_articles::Migration),
+        ];
 
         locals.sort_by_key(|m| m.name().to_string());
 

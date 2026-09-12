@@ -27,4 +27,3 @@ chrono = { version = "0.4", features = ["serde"] }
 
 [patch."https://github.com/ericbutera/kaleido"]
 kaleido = { path = "../kaleido/rust/kaleido" }
-kaleido_migrations = { path = "../kaleido/rust/kaleido_migrations" }

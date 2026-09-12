@@ -1,6 +1,124 @@
 [tools]
 copier = "9.12.0"
 node = "25.2.1"
+pnpm = "10.30.1"
 pulumi = "3.216.0"
 rust = "1.97.1"
-task = "3.45.5"
+
+[tasks."ui-next:deps"]
+description = "Install ui-next dependencies"
+dir = "ui-next"
+run = "pnpm install"
+
+[tasks."ui-next:dev"]
+description = "Start the rss Next frontend"
+dir = "ui-next"
+run = "pnpm run dev"
+
+[tasks."ui-next:test"]
+description = "Typecheck and test the rss Next frontend"
+dir = "ui-next"
+run = '''
+pnpm run typecheck
+pnpm run test
+'''
+
+[tasks."ui-next:typecheck"]
+description = "Typecheck the rss Next frontend"
+dir = "ui-next"
+run = "pnpm run typecheck"
+
+[tasks."ui-next:test:watch"]
+description = "Run the rss Next frontend tests in watch mode"
+dir = "ui-next"
+run = "pnpm run test:watch"
+
+[tasks."kaleido:status"]
+description = "Show the Rust and UI Kaleido sources used by RSS"
+run = '''
+echo "Rust Kaleido:"
+rg -n "kaleido(_migrations)? = .*github|^\[patch\.\"https://github\.com/ericbutera/kaleido\"\]|kaleido(_migrations)? = \{ path" Cargo.toml api/Cargo.toml worker/Cargo.toml migration/Cargo.toml
+echo
+echo "UI Kaleido:"
+pnpm --dir ui-next exec node -p "require('./package.json').dependencies['@ericbutera/kaleido']"
+'''
+
+[tasks."kaleido:update"]
+description = "Update UI Kaleido package; run as VERSION=x.y.z mise run kaleido:update"
+run = '''
+VERSION="${VERSION:?Set VERSION=x.y.z}"
+pnpm --dir ui-next up "@ericbutera/kaleido@$VERSION"
+pnpm --dir ui-next typecheck
+'''
+
+[tasks."api:dev"]
+description = "Start the rss API"
+run = "cargo run --bin api"
+
+[tasks."api:build"]
+description = "Build the rss API"
+run = "cargo build --release --bin api"
+
+[tasks."worker:dev"]
+description = "Start the rss worker"
+run = "cargo run --bin worker"
+
+[tasks."worker:build"]
+description = "Build the rss worker"
+run = "cargo build --release --bin worker"
+
+[tasks."migration:up"]
+description = "Run rss database migrations"
+dir = "migration"
+run = "cargo run -- up"
+
+[tasks.test]
+description = "Run rss Rust tests"
+run = "cargo test"
+
+[tasks.fmt]
+description = "Format the rss Rust workspace"
+run = "cargo fmt --all"
+
+[tasks."fmt:check"]
+description = "Check rss Rust formatting without writing changes"
+run = "cargo fmt --all --check"
+
+[tasks.lint]
+description = "Run rss Rust Clippy checks"
+run = "cargo clippy --workspace --all-targets --all-features"
+
+[tasks."test:worker"]
+description = "Run rss worker tests"
+run = "cargo test --test worker"
+
+[tasks."test:worker:integration"]
+description = "Run ignored rss worker integration tests"
+run = "cargo test -p worker -- --ignored"
+
+[tasks."deploy:prod"]
+description = "Run pulumi up for the rss production stack"
+dir = "../pulumi-iac/rss"
+run = '''
+pulumi stack select ericbutera/rss/rss --non-interactive
+pulumi up --yes --skip-preview
+'''
+
+[tasks."openapi:react-query"]
+description = "Generate OpenAPI TypeScript definitions from a running API"
+run = '''
+echo "Waiting for API to be ready..."
+OPENAPI_URL="${OPENAPI_URL:-http://localhost:3000/openapi.json}"
+OPENAPI_TMP=".openapi-tmp.json"
+for _ in {1..30}; do
+  status=$(curl -s -o "$OPENAPI_TMP" -w "%{http_code}" "$OPENAPI_URL" || echo "000")
+  if [ "$status" = "200" ]; then
+    if node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('$OPENAPI_TMP','utf8')); if(!j.openapi) process.exit(2);" >/dev/null 2>&1; then
+      break
+    fi
+  fi
+  sleep 2
+done
+npx openapi-typescript "$OPENAPI_TMP" --output ui-next/lib/react-query/api.d.ts
+rm -f "$OPENAPI_TMP"
+'''
