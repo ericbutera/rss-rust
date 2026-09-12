@@ -1,0 +1,6 @@
+[tools]
+copier = "9.12.0"
+node = "25.2.1"
+pulumi = "3.216.0"
+rust = "1.97.1"
+task = "3.45.5"
