@@ -2003,7 +2003,7 @@ dependencies = [
 
 [[package]]
 name = "kaleido"
-version = "0.8.5"
+version = "0.8.7"
 dependencies = [
  "argon2",
  "async-trait",
