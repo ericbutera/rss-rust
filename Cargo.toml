@@ -24,6 +24,4 @@ async-trait = "0.1"
 utoipa = { version = "5", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "8", features = ["axum"] }
 chrono = { version = "0.4", features = ["serde"] }
-
-[patch."https://github.com/ericbutera/kaleido"]
-kaleido = { path = "../kaleido/rust/kaleido" }
+kaleido = "0.8.7"

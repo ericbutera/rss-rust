@@ -120,6 +120,7 @@ impl Model {
     }
 
     /// Insert a new article with all fields populated (used by the page extractor).
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_full(
         db: &impl ConnectionTrait,
         feed_id: i32,

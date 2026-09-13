@@ -4,30 +4,18 @@ when:
   - event: manual
 
 steps:
-  # Clone kaleido alongside the workspace so cargo uses the local [patch] path
-  # in Cargo.toml rather than fetching from GitHub during the build.
-  - name: clone-kaleido
-    image: alpine/git
-    commands:
-      - sh .woodpecker/clone-kaleido.sh
-
-  # Rust unit tests (uses local kaleido path, no network calls from cargo)
   - name: test-rust
-    image: rust:1.93.0-bookworm
-    depends_on: [clone-kaleido]
+    image: rust:1-bookworm
     environment:
       TEST_MODE: "1"
     commands:
       - sh .woodpecker/test-rust.sh
 
-  # TypeScript type-check for ui-next (runs in parallel with Rust tests)
   - name: test-ui
     image: node:25-alpine
     commands:
       - sh .woodpecker/test-ui.sh
 
-  # Builds are serialized (api → worker → ui) to avoid concurrent Kaniko
-  # processes exhausting server RAM. Kaniko --cache keeps rebuilds fast.
   - name: build-api
     image: woodpeckerci/plugin-kaniko
     depends_on: [test-rust, test-ui]
@@ -42,7 +30,7 @@ steps:
       context: .
       dockerfile: api/Dockerfile
       cache: true
-      cache_repo: rss-api-cache
+      cache_repo: rss-rust-cache
 
   - name: build-worker
     image: woodpeckerci/plugin-kaniko
@@ -58,7 +46,7 @@ steps:
       context: .
       dockerfile: worker/Dockerfile
       cache: true
-      cache_repo: rss-worker-cache
+      cache_repo: rss-rust-cache
 
   - name: build-ui
     image: woodpeckerci/plugin-kaniko
@@ -74,8 +62,6 @@ steps:
       context: ui-next
       dockerfile: ui-next/Dockerfile
 
-  # Runs after all builds complete. Sets all three tags and runs ONE pulumi up
-  # to avoid 409 "Another update is currently in progress" errors.
   - name: deploy
     image: pulumi/pulumi-go:latest
     depends_on: [build-api, build-worker, build-ui]

@@ -1,17 +1,18 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1-bookworm AS chef
+# Keep this Rust version in sync with mise.toml. A floating cargo-chef tag
+# changes the parent image and invalidates Kaniko's cargo-chef cache.
+FROM lukemathwalker/cargo-chef:latest-rust-1.97.1-bookworm AS chef
 WORKDIR /app
+ENV RUSTUP_TOOLCHAIN=1.97.1
 
 FROM chef AS planner
 COPY . .
-RUN sed -i '/^\[patch\."https:\/\/github\.com\/ericbutera\/kaleido"\]/,/^auth = { path/d' Cargo.toml
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook --release --recipe-path recipe.json --bin worker
+RUN cargo chef cook --locked --release --recipe-path recipe.json
 COPY . .
-RUN sed -i '/^\[patch\."https:\/\/github\.com\/ericbutera\/kaleido"\]/,/^auth = { path/d' Cargo.toml
-RUN cargo build --release --bin worker
+RUN cargo build --locked --release --bin api --bin worker
 
 FROM debian:bookworm-slim
 WORKDIR /app

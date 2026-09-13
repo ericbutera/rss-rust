@@ -129,6 +129,7 @@ pub struct ReorderFeedItem {
 }
 
 impl FeedResponse {
+    #[allow(clippy::too_many_arguments)]
     fn from_model(
         m: feeds::Model,
         last_read_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -695,7 +696,7 @@ pub async fn list_articles(
     let subscription = user_feeds::Model::find_subscription(db, user_id, id).await?;
     let effective_only_unread = params
         .only_unread
-        .unwrap_or_else(|| subscription.as_ref().map_or(false, |s| s.only_unread));
+        .unwrap_or_else(|| subscription.as_ref().is_some_and(|s| s.only_unread));
     let all_read_at = subscription.and_then(|s| s.all_articles_read_at);
 
     if params.only_saved {
@@ -713,7 +714,7 @@ pub async fn list_articles(
             .data
             .into_iter()
             .filter(|a| {
-                a.read_at.is_none() && all_read_at.map_or(true, |bulk_ts| a.created_at > bulk_ts)
+                a.read_at.is_none() && all_read_at.is_none_or(|bulk_ts| a.created_at > bulk_ts)
             })
             .collect();
         Ok(Json(PaginatedResponse {
@@ -831,7 +832,7 @@ pub async fn mark_article_read(
             match user_feeds::Model::find_subscription(db, user_id, article.feed_id).await? {
                 Some(sub) => sub
                     .all_articles_read_at
-                    .map_or(true, |read_at| article.created_at > read_at),
+                    .is_none_or(|read_at| article.created_at > read_at),
                 None => false,
             };
         if should_decrement {

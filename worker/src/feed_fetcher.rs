@@ -111,7 +111,7 @@ pub(crate) fn entry_to_article_data(entry: Entry) -> Option<ArticleData> {
 
     let image_url: Option<String> = extract_media_image(&entry);
     let title = entry.title.map(|t| t.content);
-    let author = entry.authors.into_iter().find_map(|p| Some(p.name));
+    let author = entry.authors.into_iter().map(|p| p.name).next();
 
     let raw_summary = entry
         .summary

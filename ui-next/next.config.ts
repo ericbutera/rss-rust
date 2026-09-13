@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 // When pointing Turbopack/webpack at the raw kaleido source, that source
-// resolves its own imports (react, react-query, etc.) from kaleido's
-// node_modules, producing a second instance of those singletons.
+// resolves its own imports (react, react-query, react-router-dom, etc.) from
+// kaleido's node_modules, producing a second instance of those singletons.
 // Force them all to the app's copies so there's only one instance.
 
 // Turbopack: project-relative paths (must not start with ../)
@@ -36,22 +36,21 @@ const localKaleidoEntry = path.resolve(
   "../../kaleido/typescript/packages/kaleido/src/index.ts",
 );
 
-const kaleidoEntry = fs.existsSync(dockerKaleidoEntry)
-  ? dockerKaleidoEntry
-  : fs.existsSync(localKaleidoEntry)
-    ? localKaleidoEntry
-    : null;
+const enableLocalKaleidoSource = /^(1|true|yes)$/i.test(
+  process.env.USE_LOCAL_KALEIDO ?? "",
+);
 
 const useLocalKaleido =
-  process.env.NODE_ENV !== "production" && kaleidoEntry !== null;
+  process.env.NODE_ENV !== "production" &&
+  enableLocalKaleidoSource &&
+  (fs.existsSync(dockerKaleidoEntry) || fs.existsSync(localKaleidoEntry));
 
-// Turbopack resolveAlias only supports paths within the project root —
-// absolute paths and ../ relative paths are not supported.
-// When kaleido is mounted inside /app (Docker), the relative path stays
-// within the project. On macOS local dev it would be ../../ so we skip it
-// (webpack alias still works for non-turbopack dev).
+const kaleidoEntry = fs.existsSync(dockerKaleidoEntry)
+  ? dockerKaleidoEntry
+  : localKaleidoEntry;
+
 const turbopackAlias = (() => {
-  if (!kaleidoEntry) return null;
+  if (!useLocalKaleido) return null;
   const rel = path.relative(__dirname, kaleidoEntry).split(path.sep).join("/");
   if (rel.startsWith("../")) return null;
   return `./${rel}`;
@@ -61,7 +60,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: ["@ericbutera/kaleido"],
   experimental: {
-    externalDir: true,
+    externalDir: useLocalKaleido,
   },
   turbopack: {
     resolveAlias:
@@ -73,7 +72,7 @@ const nextConfig: NextConfig = {
         : undefined,
   },
   webpack: (config) => {
-    if (useLocalKaleido && kaleidoEntry) {
+    if (useLocalKaleido) {
       config.resolve.alias = {
         ...(config.resolve.alias ?? {}),
         "@ericbutera/kaleido": kaleidoEntry,
