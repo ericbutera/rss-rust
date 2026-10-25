@@ -6,6 +6,15 @@
 #   CI_COMMIT_BEFORE, CI_COMMIT_SHA
 set -e
 
+# Accept the infrastructure layout before and after its directory migration.
+enter_iac_project() {
+  project_root=/tmp/pulumi-iac/services/applications/rss
+  if [ ! -d "$project_root" ]; then
+    project_root=/tmp/pulumi-iac/rss
+  fi
+  cd "$project_root"
+}
+
 MANUAL="${CI_PIPELINE_EVENT}"
 BEFORE="${CI_COMMIT_BEFORE}"
 FALLBACK_DEPLOY_ALL=false
@@ -40,7 +49,7 @@ if [ -z "$API_TAG" ] && [ -z "$WORKER_TAG" ] && [ -z "$UI_TAG" ]; then
 fi
 
 git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${PULUMI_IAC_REPO}" /tmp/pulumi-iac
-cd /tmp/pulumi-iac/rss
+enter_iac_project
 pulumi stack select ericbutera/rss/rss --non-interactive
 
 if [ -n "$API_TAG" ];    then pulumi config set rss:apiTag    "$API_TAG";    fi
