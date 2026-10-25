@@ -98,8 +98,13 @@ run = "cargo test -p worker -- --ignored"
 
 [tasks."deploy:prod"]
 description = "Run pulumi up for the rss production stack"
-dir = "../pulumi-iac/rss"
+dir = "../pulumi-iac"
 run = '''
+project=services/applications/rss
+if [ ! -d "$project" ]; then
+  project=rss
+fi
+cd "$project" || exit
 pulumi stack select ericbutera/rss/rss --non-interactive
 pulumi up --yes --skip-preview
 '''
